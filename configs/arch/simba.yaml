@@ -1,0 +1,53 @@
+arch:
+  arithmetic:
+    instances: 1024
+    meshX: 16
+    word-bits: 8
+  storage:
+  - name: Registers
+    entries: 1
+    instances: 1024
+    meshX: 16
+    word-bits: 8
+    cluster-size: 64
+    num-ports: 2
+    num-banks: 8
+  - name: AccumulationBuffer
+    entries: 64
+    instances: 128
+    meshX: 16
+    word-bits: 24
+    cluster-size: 8
+    network-word-bits: 16
+    num-ports: 2
+    num-banks: 2
+  - name: WeightBuffer
+    entries: 16384
+    instances: 128
+    meshX: 16
+    word-bits: 8
+    block-size: 8
+    num-ports: 1
+    num-banks: 8
+  - name: InputBuffer
+    entries: 4096 
+    instances: 16
+    meshX: 16
+    word-bits: 8
+    block-size: 8
+    num-ports: 2
+    num-banks: 1
+  - name: GlobalBuffer
+    entries: 65536
+    instances: 1
+    word-bits: 8
+    block-size: 8
+    num-ports: 2
+    num-banks: 256
+  - name: DRAM
+    technology: "DRAM"
+    instances: 1
+    word-bits: 8
+    block-size: 64
+    bandwidth: 20.0
+

@@ -1,0 +1,13 @@
+problem:
+  C: 3
+  Hdilation: 1
+  Hstride: 2
+  K: 64
+  N: 1
+  P: 108
+  Q: 108
+  R: 3
+  S: 3
+  Wdilation: 1
+  Wstride: 2
+  shape: cnn-layer

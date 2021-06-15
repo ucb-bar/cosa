@@ -1,0 +1,39 @@
+mapspace:
+  constraints:
+  - target: Registers
+    type: datatype 
+    keep:
+    - Weights
+    bypass:
+    - Inputs 
+    - Outputs
+  - target: AccumulationBuffer
+    type: datatype
+    keep:
+    - Outputs
+    bypass:
+    - Weights
+    - Inputs
+  - target: WeightBuffer
+    type: datatype
+    keep:
+    - Weights
+    bypass:
+    - Inputs
+    - Outputs
+  - target: InputBuffer
+    type: datatype
+    keep:
+    - Inputs
+    bypass:
+    - Weights
+    - Outputs
+  - target: GlobalBuffer
+    type: datatype
+    keep:
+    - Inputs
+    - Outputs
+    bypass:
+    - Weights
+
+
