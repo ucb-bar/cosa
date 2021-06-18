@@ -77,33 +77,21 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
     prime_factors = prob.prob_factors
     strides = [prob.prob['Wstride'], prob.prob['Hstride']]
 
-    if Z is None:
-        Z = []
-        for var in _B:
-            Z_var = []
-            for i, val in enumerate(var):
-                rank_arr = [0] * len(var)
-                if val == 1:
-                    for j in range(i + 1):
-                        rank_arr[j] = 1
-                Z_var.append(rank_arr)
-            Z.append(Z_var)
-
     factor_config, spatial_config, outer_perm_config, run_time = mip_solver(prime_factors, strides, arch, part_ratios,
-                                                                            global_buf_idx=4, A=_A, Z=Z,
+                                                                            global_buf_idx=4, A=_A, B=_B,
                                                                             compute_factor=10, util_factor=-0.1,
                                                                             traffic_factor=1)
     return factor_config, spatial_config, outer_perm_config, run_time
 
 
-def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_factor=10, util_factor=-1,
+def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, B, compute_factor=10, util_factor=-1,
                traffic_factor=1):
     """CoSA mixed integer programming(MIP) formulation."""
 
     logging.info(f"LAYER {f}")
 
     num_vars = len(A[0])
-    num_mems = len(Z[0])
+    num_mems = len(B[0])
 
     m = Model("mip")
     cost = []
@@ -263,8 +251,13 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
             buf_util[(i, v)] = 0
 
     for v in range(num_vars):
-        for i_ in range(gb_start_level + perm_levels):
-            for i in range(num_mems):
+        for i in range(gb_start_level + perm_levels):
+            if i >= gb_start_level and i < gb_start_level + perm_levels - 1:
+                continue
+            for i_ in range(i+1):
+                if i == gb_start_level + perm_levels - 1:
+                    i = gb_start_level
+
                 for j, f_j in enumerate(f):
                     for n, f_jn in enumerate(f_j):
                         factor = 1
@@ -273,17 +266,14 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
                         if v == 1 and j == 3:
                             factor = strides[1]
 
-                        if i_ > gb_start_level and i_ < gb_start_level + perm_levels:
-                            Z_const = Z[v][i][gb_start_level]
-                        else:
-                            Z_const = Z[v][i][i_]
                         buf_util[(i, v)] += np.log2(factor * f[j][n]) * (x[(i_, j, n, 0)] + x[i_, j, n, 1]) * A[j][
-                            v] * Z_const  # use the i for the cur mem for relationship 
+                            v] * B[v][i] # use the i for the cur mem for relationship 
                         # only add once
                         if i == 3 and j in [0, 1] and v == 1:
                             buf_util[(i, v)] += (x[(i_, j, n, 0)] + x[(i_, j, n, 1)]) * (1 - zz[(j + 2, i)]) * np.log2(
                                 f[j][n])
                             buf_util[(i, v)] += (x[(i_, j, n, 0)] + x[(i_, j, n, 1)]) * zz[(j + 2, i)] * np.log2(2)
+
 
     for v in range(num_vars):
         # excluding DRAM
