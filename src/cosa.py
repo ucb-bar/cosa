@@ -13,7 +13,7 @@ from gurobipy import *
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # capture everything
-# logging.disabled = True
+logger.disabled = True
 
 _COSA_DIR = os.environ['COSA_DIR']
 
@@ -446,7 +446,6 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
             row_sum = 0
             val = result_dict["y({},{})".format(v, i)]
             y_arr[v, i - gb_start_level] = val
-    # logging.info(x_arr.reshape(perm_levels, -1))
 
     # Merge the permutation, taking the first appearance of a prob to be the
     merge_outer_perm_config = []
@@ -477,7 +476,7 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
         sub_spatial_config = []
         for n, f_jn in enumerate(f_j):
             sub_factor_config.append(dram_level)
-            sub_spatial_config.append(1)
+            sub_spatial_config.append(0)
         factor_config.append(sub_factor_config)
         spatial_config.append(sub_spatial_config)
 
@@ -493,21 +492,15 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
                     if val >= 0.9:
                         factor_config[j][n] = i
                         if k == 0:
-                            spatial_config[j][n] = 0
+                            spatial_config[j][n] = 1
 
     for i in range(gb_start_level + perm_levels, total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
                 for k in range(2):
                     name = "X({},{},{},{})".format(i, j, n, k)
-                    val = result_dict[name]
-                    if k == 0:
-                        if val >= 0.9:
-                            factor_config[j][n] = spatial_to_factor_map[i]
-                            assert False
-                    else:
-                        if val >= 0.9:
-                            factor_config[j][n] = i - perm_levels + 1
+                    if val >= 0.9:
+                        factor_config[j][n] = i - perm_levels + 1
 
     # set to -1 for not specified 
     for j, f_j in enumerate(f):
@@ -519,20 +512,11 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
                     if val >= 0.9:
                         factor_config[j][n] = gb_start_level
                         if k == 0:
-                            spatial_config[j][n] = 0
+                            spatial_config[j][n] = 1
 
     logging.info(f"prime factors: {f}")
     logging.info(f"factor configs: {factor_config}")
     logging.info(f"spatial configs: {spatial_config}")
-
-    level_idx = 0
-    for j, f_j in enumerate(f):
-        for n, f_jn in enumerate(f_j):
-            if factor_config[j][n] == -1:
-                logging.info(all_x[:][idx])
-                level_idx += 1
-                # TRICK rough fix to make it dram        
-                assert False
 
     return (factor_config, spatial_config, outer_perm_config, milp_runtime)
 
@@ -579,7 +563,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
     for j, f_j in enumerate(prob.prob_factors):
         for n, f_jn in enumerate(f_j):
             # if is mapped to spatial, look up the combined index
-            if spatial_config[j][n] == 0:
+            if spatial_config[j][n] == 1:
                 idx = factor_config[j][n]
                 update_factor_config[j][n] = spatial_to_factor_map[idx]
 
