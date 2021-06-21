@@ -485,6 +485,7 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
             for n, f_jn in enumerate(f_j):
                 if f[j][n] == 1:
                     factor_config[j][n] = num_mems - 1
+                    spatial_config[j][n] = 0
                     continue
                 for k in range(2):
                     name = "X({},{},{},{})".format(i, j, n, k)
@@ -497,9 +498,17 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
     for i in range(gb_start_level + perm_levels, total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
+                if f[j][n] == 1:
+                    factor_config[j][n] = num_mems - 1
+                    spatial_config[j][n] = 0
+                    continue
+
                 for k in range(2):
                     name = "X({},{},{},{})".format(i, j, n, k)
+                    val = result_dict[name]
                     if val >= 0.9:
+                        if k == 0:
+                            raise ValueError('Invalid Mapping')
                         factor_config[j][n] = i - perm_levels + 1
 
     # set to -1 for not specified 
