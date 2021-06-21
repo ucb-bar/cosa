@@ -17,6 +17,7 @@ logger.disabled = True
 
 _COSA_DIR = os.environ['COSA_DIR']
 
+
 def construct_argparser():
     parser = argparse.ArgumentParser(description='Run Configuration')
     parser.add_argument('-o',
@@ -588,7 +589,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
                                         spatial_configs=spatial_configs, valid_check=False, outer_loopcount_limit=100)
         logging.info(f'status_dict: {status_dict}')
     except:
-        logging.error('Error: invalid schedule.') 
+        logging.error('Error: invalid schedule.')
 
     return status_dict
 
