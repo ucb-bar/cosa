@@ -3,7 +3,6 @@ import copy
 import itertools
 import os
 import subprocess
-import json
 
 import utils
 from cosa_input_objs import Arch
