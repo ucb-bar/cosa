@@ -76,7 +76,7 @@ def gen_data(new_arch_dir, output_dir):
     # a12: run on first 1152 sorted elements
     arch_files = arch_files[:1152]
 
-    # a11: run on last 1152 sorted elements
+    # Other machine: run on last 1152 sorted elements
     # arch_files = arch_files[1152:]
 
     processes = []
@@ -84,8 +84,7 @@ def gen_data(new_arch_dir, output_dir):
     for arch_file in arch_files:
         print(arch_file)
 
-        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", \
-               arch_file, "--model", "resnet50"]
+        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
@@ -101,23 +100,67 @@ def gen_data(new_arch_dir, output_dir):
     for process in processes:
         process.wait()
 
+def total_layer_values(layer_values_dict, layer_count):
+    """
+    Calculate the total cycle/energy value of a network by summing up the values for each unique layer,
+    multiplied by the number of times a layer with those dimensions appears in the network.
+    """
+    total = 0
+    for layer in layer_values_dict:
+        if layer not in layer_count:
+            print(f"ERROR: layer {layer} not found in layer count file")
+            exit(1)
+        total += layer_values_dict[layer] * layer_count[layer]
+
+    return total
+
 def fetch_data(new_arch_dir, output_dir):
     # Get all arch files
     arch_files = new_arch_dir.glob('arch_pe*.yaml')
+    workload_dir = pathlib.Path('../configs/workloads').resolve()
 
-    processes = []
+    db = {}
+    layer_counts = {}
     # Fetch data into DB
-    for arch_file in arch_files:
+    for arch_path in arch_files:
         # Get each file's data
-        arch_name = os.path.basename(arch_file)
-        cycle_json = output_dir / arch_name / f"results_{arch_name}_cycle.json"
-        cycle_dict = utils.parse_json(cycle_json)
-        print(cycle_dict)
-        return
+        arch_name = os.path.basename(arch_path).split(".yaml")[0]
+        cycle_json = output_dir / f"results_{arch_name}_cycle.json"
+        energy_json = output_dir / f"results_{arch_name}_energy.json"
+        try:
+            cycle_dict = utils.parse_json(cycle_json)
+            energy_dict = utils.parse_json(energy_json)
+        except:
+            # Data missing for some reason
+            continue
+        
+        arch = Arch(arch_path)
+        arch_db = {}
+
+        for model in cycle_dict:
+            if model not in layer_counts:
+                model_dir = workload_dir / (model+'_graph')
+                layer_count_path = model_dir / ('layer_count.yaml')
+                layer_counts[model] = utils.parse_yaml(layer_count_path)
+            
+            total_cycle = total_layer_values(cycle_dict[model], layer_counts[model])
+            total_energy = total_layer_values(energy_dict[model], layer_counts[model])
+            arch_db[model] = {
+                "cycle": total_cycle,
+                "energy": total_energy
+            }
+        
+        db[arch.config_str()] = arch_db
+
+        if len(db) % 100 == 0:
+            print(f"Fetched data for {len(db)} arch")
+    
+    utils.store_json("all_arch.json", db)
 
 if __name__ == "__main__":
     # gen_arch_yaml("simba_final_input_modified")
     new_arch_dir = pathlib.Path("/scratch/charleshong/matchlib/cmod/unittests/HybridRouterTopMeshTCGB/timeloop_configs/gen_arch/")
     output_dir = pathlib.Path("output_dir")
-    gen_data(new_arch_dir, output_dir)
-    # fetch_data(new_arch_dir, output_dir)
+    output_dir = pathlib.Path("/nscratch/qijing.huang/cosa/labels/")
+    # gen_data(new_arch_dir, output_dir)
+    fetch_data(new_arch_dir, output_dir)
