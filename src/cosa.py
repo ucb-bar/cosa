@@ -392,7 +392,8 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
     m.addConstr(total_traf_var == total_traffic, "total_traf_constraint")
 
     m.ModelSense = GRB.MINIMIZE
-    m.setObjective(cosa_obj, GRB.MINIMIZE)
+    m.setObjective(cosa_obj, GRB.MINIMIZE) 
+    m.setParam('TimeLimit', 60)
 
     # optimize for the objective function
     milp_time = 0
