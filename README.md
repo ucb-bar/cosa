@@ -20,7 +20,8 @@ The specific Timeloop version used for CoSA evaluation is commit [11920be](https
 3. Python3
 Install packages for Python3 with:
 ```
-pip install numpy==1.19.0 PyYAML==5.3.1 yamlordereddictloader==0.4.0 seaborn==0.10.1 matplotlib==3.2.2 pandas==1.0.5
+pip install numpy==1.19.0 PyYAML==5.3.1 yamlordereddictloader==0.4.0 seaborn==0.10.1 \
+    matplotlib==3.2.2 pandas==1.0.5 gurobipy
 ```
 4. Environment Set##up 
 Update `env.sh` with the paths to `COSA_DIR`, `TIMELOOP_DIR`, `GUROBI_HOME`, and `GRB_LICENSE_FILE`, and source the environment `source env.sh`.
