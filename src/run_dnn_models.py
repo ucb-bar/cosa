@@ -51,7 +51,6 @@ def construct_argparser():
 
 
 def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model):
-
     cycle_result_path = pathlib.Path(output_dir) / f'results_{arch_path.stem}_cycle.json'
     if cycle_result_path.exists():
         return
@@ -60,7 +59,7 @@ def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model):
         model_strs = [model]
     else:
         model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
-    full_results = {'energy': {}, 'pe_cycle': {}, 'cycle': {}, }
+    full_results = {'energy': {}, 'pe_cycle': {}, 'cycle': {}, 'area': {}}
 
     for model_str in model_strs:
         logger.info(f'model: {model_str}')
