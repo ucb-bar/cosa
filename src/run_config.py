@@ -113,6 +113,7 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
     map_path = output_dir / 'map_16.yaml'
     logging.info("map_path: {}".format(map_path))
     xml_file = output_dir / 'timeloop-model.map+stats.xml'
+    stats_txt_file = output_dir / 'timeloop-model.stats.txt'
     csv_file = output_dir / "{}.csv".format(prefix)
     json_file = output_dir / "{}.json".format(prefix)
     stats_file = output_dir / "{}.summary.json".format(prefix)
@@ -161,6 +162,10 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
                 for mem_util in buf:
                     utilized_capacity += mem_util
                 status_dict[status_dict_key]['utilized_capacity'].append(utilized_capacity)
+            # parse area
+            area = utils.get_area_stats(stats_txt_file)
+            status_dict[status_dict_key]['area'] = area
+
     logging.info("Status: {}".format(status_dict[status_dict_key]))
     utils.store_json(status_dict_file, status_dict, indent=4)
     return status_dict[status_dict_key]

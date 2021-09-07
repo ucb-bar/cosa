@@ -51,6 +51,11 @@ def construct_argparser():
 
 
 def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model):
+
+    cycle_result_path = pathlib.Path(output_dir) / f'results_{arch_path.stem}_cycle.json'
+    if cycle_result_path.exists():
+        return
+
     if model is not None:
         model_strs = [model]
     else:

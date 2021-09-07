@@ -353,6 +353,17 @@ def get_correlation(a, b):
     return cor
 
 
+def get_area_stats(stats_txt_file):
+    with open(stats_txt_file, 'r') as f:
+        lines = f.readlines()
+
+    for line in lines:
+        m = re.match(r"Area: (.*) mm\^2", line)
+        if m:
+            area = float(m.group(1))
+    return area
+
+
 def get_cor_stats(status_dicts):
     arr = []
     for d in status_dicts:
@@ -413,7 +424,6 @@ def get_invalid_samples(temp_file):
     for line in lines:
         m = re.match(r".*MATCHLIB_TOTAL: (.*), MATCHLIB_VALID.*", line)
         if m:
-            # print(m)
             invalid = m.group(1)
             total_invalid += int(invalid)
     return total_invalid
