@@ -12,6 +12,7 @@ from cosa_input_objs import Arch
 
 _COSA_DIR = os.environ['COSA_DIR']
 
+
 def construct_argparser():
 
     parser = argparse.ArgumentParser(description='Run Configuration')
@@ -36,12 +37,71 @@ def construct_argparser():
     return parser
 
 
-def gen_arch_yaml(base_arch_path, output_dir):
+def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, search_algo, opt_algo, arch_v3=False):
     # Get base arch dictionary
     base_arch = utils.parse_yaml(base_arch_path)
 
     # Create directory for new arch files, if necessary
-    new_arch_dir = output_dir
+    new_arch_dir = arch_dir
+    new_arch_dir.mkdir(parents=True, exist_ok=True)
+    new_arch = copy.deepcopy(base_arch)
+
+    # parse hw config
+    arith_meshX,arith_ins,mem0_ins,mem1_ent,mem2_ent,mem3_ent,mem4_ent = hw_configs 
+ 
+    if arch_v3: 
+        base_arch_dict = base_arch["architecture"]["subtree"][0]["subtree"][0]
+        new_arch_dict = new_arch["architecture"]["subtree"][0]["subtree"][0]
+        raise 
+    else:
+	# Get nested dictionaries
+        base_arith = base_arch["arch"]["arithmetic"]
+        new_arith = new_arch["arch"]["arithmetic"]
+        base_storage = base_arch["arch"]["storage"]
+        new_storage = new_arch["arch"]["storage"]
+        new_arith["meshX"] = arith_meshX
+        #new_arith["instances"] = arith_ins
+        #new_storage[0]["instances"] = mem0_ins
+        new_storage[1]["entries"] = mem1_ent
+        new_storage[2]["entries"] = mem2_ent
+        new_storage[3]["entries"] = mem3_ent
+        new_storage[4]["entries"] = mem4_ent
+
+        for i in range(5):
+            if "meshX" in new_storage[i]:
+                new_storage[i]["meshX"] = arith_meshX
+            
+    hw_configs_arr = [str(i) for i in hw_configs]
+    hw_configs_str = "_".join(hw_configs_arr)
+
+    # Construct filename for new arch
+    config_str = get_hw_config_str(hw_configs, search_algo, opt_algo)
+
+    # Save new arch
+    new_arch_path = new_arch_dir.resolve() / config_str
+    utils.store_yaml(new_arch_path, new_arch)
+    return config_str
+
+
+def get_hw_config_str(hw_configs, search_algo, opt_algo, arch_v3=False):
+    hw_configs_arr = [str(i) for i in hw_configs]
+    hw_configs_str = "_".join(hw_configs_arr)
+
+    # Construct filename for new arch
+    config_str = f"arch_{search_algo}_{opt_algo}_"
+    config_str += hw_configs_str 
+    if arch_v3: 
+        config_str += "_v3"
+    config_str += ".yaml"
+    return config_str
+
+
+def gen_arch_yaml(base_arch_path, arch_dir):
+    # Get base arch dictionary
+    base_arch = utils.parse_yaml(base_arch_path)
+
+    # Create directory for new arch files, if necessary
+    new_arch_dir = arch_dir
     new_arch_dir.mkdir(parents=True, exist_ok=True)
 
     buf_multipliers = [0.5, 1, 2, 4]
@@ -113,16 +173,81 @@ def gen_arch_yaml(base_arch_path, output_dir):
                 for multiplier in buf_multipliers_perm:
                     config_str += "_" + str(multiplier)
                 config_str += "_v3.yaml"
-
+                
                 # Save new arch
                 new_arch_path = new_arch_dir.resolve() / config_str
                 utils.store_yaml(new_arch_path, new_arch)
 
 
-def gen_data(new_arch_dir, output_dir):
+def gen_dataset_csv(data, dataset_path):
+    with open(dataset_path,  'w') as f:
+        col_str = ['name', 'unique_cycle_sum', 'unique_energy_sum', 'arith_meshX', 'arith_ins']
+        for i in range(5):
+            # col_str.extend([f'mem{i}_meshX', f'mem{i}_ins', f'mem{i}_ent'])
+            col_str.extend([f'mem{i}_ins', f'mem{i}_ent'])
+        key = ','.join(col_str)
+        f.write(f'{key}\n')
+        for d in data:
+            key = d[0]
+            col_str = ','.join(d[1])
+            f.write(f'{key},{col_str}\n')
+
+
+def gen_dataset(new_arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5, model_cycles=False):
     # Get all arch files
-    arch_files = list(new_arch_dir.glob('arch_pe*_v3.yaml'))
+    arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
+    print(arch_files)
+    data = []
+    for arch_file in arch_files: 
+        base_arch_str = arch_file.name 
+        print(base_arch_str)
+        m = re.search("arch_(\S+).yaml", base_arch_str)
+        if not m:
+            raise ValueError("Wrong config string format.")
+        config_str = m.group(1)
+
+        new_arch = utils.parse_yaml(arch_file)
+        if arch_v3: 
+            base_arch_dict = base_arch["architecture"]["subtree"][0]["subtree"][0]
+            new_arch_dict = new_arch["architecture"]["subtree"][0]["subtree"][0]
+            raise 
+        else:
+            # Get nested dictionaries
+            new_arith = new_arch["arch"]["arithmetic"]
+            new_storage = new_arch["arch"]["storage"]
+
+            data_entry = [str(new_arith["meshX"]), str(new_arith["instances"]), ]
+            for i in range(mem_levels): # Ignoring DRAM
+                data_entry.extend([str(new_storage[i]["instances"]), str(new_storage[i]["entries"])])
+
+                # Get the labels 
+                results_path = output_dir 
+                
+            cycle_path = results_path / f'results_arch_{config_str}_cycle.json'
+            energy_path = results_path / f'results_arch_{config_str}_energy.json'
+            print(f'path: {cycle_path}') 
+            print('success')
+            try:
+                cycle = sum(utils.parse_json(cycle_path)['resnet50'].values())
+                energy = sum(utils.parse_json(energy_path)['resnet50'].values())
+            except:
+                raise
+
+            data_entry = [str(cycle), str(energy)] + data_entry
+            data.append((config_str, data_entry))
+
+    print(data)
+    dataset_path = output_dir / "dataset.csv" 
+    gen_dataset_csv(data, dataset_path)
+    return data
+
+
+def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
+    # Get all arch files
+    arch_files = list(new_arch_dir.glob(glob_str))
+    arch_files.sort()
+    print(arch_files)
 
     # arch_files = arch_files[:1]
     
@@ -130,7 +255,7 @@ def gen_data(new_arch_dir, output_dir):
     # Start schedule generation script for each layer on each arch
     for arch_file in arch_files:
 
-        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file]
+        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file] # "--model", "resnet50"]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
@@ -161,9 +286,10 @@ def total_layer_values(layer_values_dict, layer_count):
 
     return total
 
-def fetch_data(new_arch_dir, output_dir):
+
+def fetch_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
     # Get all arch files
-    arch_files = new_arch_dir.glob('arch_pe*_v3.yaml')
+    arch_files = new_arch_dir.glob(glob_str)
     workload_dir = pathlib.Path('../configs/workloads').resolve()
 
     db = {}
@@ -183,7 +309,7 @@ def fetch_data(new_arch_dir, output_dir):
         
         arch = Arch(arch_path)
         arch_db = {}
-
+        
         for model in cycle_dict:
             if model not in layer_counts:
                 model_dir = workload_dir / (model+'_graph')
@@ -194,7 +320,8 @@ def fetch_data(new_arch_dir, output_dir):
             total_energy = total_layer_values(energy_dict[model], layer_counts[model])
             arch_db[model] = {
                 "cycle": total_cycle,
-                "energy": total_energy
+                "energy": total_energy,
+                "cycle_energy_prod": total_energy * total_cycle,
             }
         
         db[arch.config_str()] = arch_db
@@ -202,7 +329,8 @@ def fetch_data(new_arch_dir, output_dir):
         if len(db) % 100 == 0:
             print(f"Fetched data for {len(db)} arch")
     
-    utils.store_json("all_arch.json", db)
+    utils.store_json(output_dir / "all_arch.json", db)
+    
 
 if __name__ == "__main__":
     parser = construct_argparser()
@@ -215,3 +343,4 @@ if __name__ == "__main__":
     # gen_arch_yaml(base_arch_path, arch_dir)
     gen_data(arch_dir, output_dir)
     # fetch_data(new_arch_dir, output_dir)
+
