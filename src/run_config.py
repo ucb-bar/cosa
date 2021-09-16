@@ -220,6 +220,8 @@ def update_greedy_factor_config(mapspace, invalid_mem_entries, invalid_mem_insta
         bound = len(factor_config)
         prob_idxs = []
         factor_mem_idxs = []
+        spatial_factor_mem_idxs = []
+        spatial_prob_idxs = []
         for prob_idx in range(bound - 1, -1, -1):
             prob_factor_configs = factor_config[prob_idx]
             prob_factors = mapspace.unschduled_prob_factors[prob_idx]
@@ -238,13 +240,32 @@ def update_greedy_factor_config(mapspace, invalid_mem_entries, invalid_mem_insta
                                 else:
                                     prob_idxs.append((prob_idx, i))
                                     factor_mem_idxs.append(factor_mem_idx)
+                        else: # spatial
+                            if factor_mem_idx - mapspace.arch.mem_levels <= mem_idx:
+                                spatial_prob_idxs.append((prob_idx, i))
+                                spatial_factor_mem_idxs.append(factor_mem_idx)
+
+
         if move_outter:
             # select one value, must exist 
-            max_mem_idx = factor_mem_idxs[0]
-            select_prob_idx = prob_idxs[0]
-            for i, factor_mem_idx in enumerate(factor_mem_idxs):
-                if factor_mem_idx > max_mem_idx:
-                    max_mem_idx = factor_mem_idx
-                    select_prob_idx = prob_idxs[i]
-            factor_config[select_prob_idx[0]][select_prob_idx[1]] = mem_idx + 1
+            if len(factor_mem_idxs) > 0:
+                max_mem_idx = factor_mem_idxs[0]
+                select_prob_idx = prob_idxs[0]
+                for i, factor_mem_idx in enumerate(factor_mem_idxs):
+                    if factor_mem_idx > max_mem_idx:
+                        max_mem_idx = factor_mem_idx
+                        select_prob_idx = prob_idxs[i]
+                factor_config[select_prob_idx[0]][select_prob_idx[1]] = mem_idx + 1
+            elif len(spatial_factor_mem_idxs) > 0:
+                max_mem_idx = spatial_factor_mem_idxs[0]
+                select_prob_idx = spatial_prob_idxs[0]
+                # find max spatial mem idx
+                for i, factor_mem_idx in enumerate(spatial_factor_mem_idxs):
+                    if factor_mem_idx > max_mem_idx:
+                        max_mem_idx = factor_mem_idx
+                        select_prob_idx = spatial_prob_idxs[i]
+                spatial_mem_idx = mapspace.valid_spatial_levels[max_mem_idx - mapspace.arch.mem_levels][0]
+                factor_config[select_prob_idx[0]][select_prob_idx[1]] = spatial_mem_idx + 1
+            else:
+                raise ValueError('Invalid mapping.')
             return
