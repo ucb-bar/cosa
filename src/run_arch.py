@@ -47,7 +47,7 @@ def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, search_algo,
     new_arch = copy.deepcopy(base_arch)
 
     # parse hw config
-    arith_meshX,arith_ins,mem0_ins,mem1_ent,mem2_ent,mem3_ent,mem4_ent = hw_configs 
+    arith_meshX,arith_ins,mem1_ent,mem2_ent,mem3_ent,mem4_ent = hw_configs 
  
     if arch_v3: 
         base_arch_dict = base_arch["architecture"]["subtree"][0]["subtree"][0]
@@ -60,8 +60,8 @@ def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, search_algo,
         base_storage = base_arch["arch"]["storage"]
         new_storage = new_arch["arch"]["storage"]
         new_arith["meshX"] = arith_meshX
-        #new_arith["instances"] = arith_ins
-        #new_storage[0]["instances"] = mem0_ins
+        new_arith["instances"] = int(arith_ins) * 128
+        new_storage[0]["instances"] = int(arith_ins) * 128 
         new_storage[1]["entries"] = mem1_ent
         new_storage[2]["entries"] = mem2_ent
         new_storage[3]["entries"] = mem3_ent
@@ -199,6 +199,8 @@ def gen_dataset(new_arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5,
     arch_files.sort()
     print(arch_files)
     data = []
+    
+    min_cycle_energy = None
     for arch_file in arch_files: 
         base_arch_str = arch_file.name 
         print(base_arch_str)
@@ -227,15 +229,23 @@ def gen_dataset(new_arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5,
             cycle_path = results_path / f'results_arch_{config_str}_cycle.json'
             energy_path = results_path / f'results_arch_{config_str}_energy.json'
             print(f'path: {cycle_path}') 
-            print('success')
             try:
                 cycle = sum(utils.parse_json(cycle_path)['resnet50'].values())
                 energy = sum(utils.parse_json(energy_path)['resnet50'].values())
+                if cycle * energy > 0: 
+                    if min_cycle_energy: 
+                        if cycle * energy < min_cycle_energy:
+                            print(config_str)
+                            min_cycle_energy = cycle * energy
+                    else:
+                        min_cycle_energy = cycle * energy
+                    print(f'min_cycle_energy: {min_cycle_energy}')
+                    print('success')
+                    data_entry = [str(cycle), str(energy)] + data_entry
+                    data.append((config_str, data_entry))
             except:
-                raise
+                pass
 
-            data_entry = [str(cycle), str(energy)] + data_entry
-            data.append((config_str, data_entry))
 
     print(data)
     dataset_path = output_dir / "dataset.csv" 
