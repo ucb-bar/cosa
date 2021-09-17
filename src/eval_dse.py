@@ -68,6 +68,21 @@ def parse_hw_configs(config_dir, search_algo, opt_algo):
     return hw_configs
 
 
+def total_layer_values(layer_values_dict, layer_count):
+    """
+    Calculate the total cycle/energy value of a network by summing up the values for each unique layer,
+    multiplied by the number of times a layer with those dimensions appears in the network.
+    """
+    total = 0
+    for layer in layer_values_dict:
+        if layer not in layer_count:
+            print(f"ERROR: layer {layer} not found in layer count file")
+            exit(1)
+        total += layer_values_dict[layer] * layer_count[layer]
+
+    return total
+
+
 def eval(hw_config, arch_dir, output_dir, search_algo='', opt_algo='', arch_v3=False, unique_sum=True, workload_dir=None):
     hw_config = hw_config[:]
     for idx in range(len(hw_config)):
@@ -90,11 +105,29 @@ def eval(hw_config, arch_dir, output_dir, search_algo='', opt_algo='', arch_v3=F
         try:
             cycle = sum(utils.parse_json(cycle_path)['resnet50'].values())
             energy = sum(utils.parse_json(energy_path)['resnet50'].values())
-            area = sum(utils.parse_json(area_path)['resnet50'].values())
+            area = list(utils.parse_json(area_path)['resnet50'].values())[0]
         except:
             raise
     else:
-        raise ValueError("Add non unique sum support!")
+        model = 'resnet50'
+
+        # Load aggregated results JSON files
+        cycle_dict = utils.parse_json(cycle_path)
+        energy_dict = utils.parse_json(energy_path)
+        area_dict = utils.parse_json(area_path)
+
+        # Load the layer count file for the selected model
+        workload_dir = pathlib.Path('../configs/workloads').resolve()
+        model_dir = workload_dir / (model+'_graph')
+        layer_count_path = model_dir / ('layer_count.yaml')
+        layer_counts_model = utils.parse_yaml(layer_count_path)
+        
+        # Compute total cycle count/energy
+        cycle = total_layer_values(cycle_dict[model], layer_counts_model)
+        energy = total_layer_values(energy_dict[model], layer_counts_model)
+        
+        # Just one value for area
+        area = list(utils.parse_json(area_path)['resnet50'].values())[0]
     return (cycle, energy, area)
 
     
