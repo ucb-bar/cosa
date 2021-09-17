@@ -69,7 +69,14 @@ def parse_hw_configs(config_dir, search_algo, opt_algo):
 
 
 def eval(hw_config, arch_dir, output_dir, search_algo='', opt_algo='', arch_v3=False, unique_sum=True, workload_dir=None):
-    hw_config = [round_config(i) for i in hw_config]
+    hw_config = hw_config[:]
+    for idx in range(len(hw_config)):
+        orig = hw_config[idx]
+        if idx == 0:
+            new = pow(2, math.ceil(math.log(orig)/math.log(2)))
+        else:
+            new = round_config(orig)
+        hw_config[idx] = new
 
     glob_str = f'arch_{search_algo}_{opt_algo}_*.yaml'
     config_yaml_str = gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, search_algo, opt_algo, arch_v3=False)
