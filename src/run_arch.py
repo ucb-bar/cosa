@@ -20,19 +20,19 @@ def construct_argparser():
                         '--output_dir',
                         type=str,
                         help='Output Folder',
-                        default='output_dir',
+                        default='output_dir_dataset',
                         )
     parser.add_argument('-a',
                         '--arch_dir',
                         type=str,
                         help='Generated Archtecture Folder',
-                        default='gen_arch',
+                        default='gen_arch_dataset',
                         )
     parser.add_argument('-bap',
                         '--base_arch_path',
                         type=str,
                         help='Hardware Architecture Path',
-                        default=f'{_COSA_DIR}/configs/arch/simba_v3.yaml',
+                        default=f'{_COSA_DIR}/configs/arch/simba_dse_v3.yaml',
                         )
     return parser
 
@@ -193,7 +193,7 @@ def gen_dataset_csv(data, dataset_path):
             f.write(f'{key},{col_str}\n')
 
 
-def gen_dataset(new_arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5, model_cycles=False):
+def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
@@ -210,10 +210,23 @@ def gen_dataset(new_arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5,
         config_str = m.group(1)
 
         new_arch = utils.parse_yaml(arch_file)
+        config_v3_str = ""
         if arch_v3: 
-            base_arch_dict = base_arch["architecture"]["subtree"][0]["subtree"][0]
-            new_arch_dict = new_arch["architecture"]["subtree"][0]["subtree"][0]
-            raise 
+            base_arch_dict = new_arch["architecture"]["subtree"][0]["subtree"][0]
+            base_meshX_str =  base_arch_dict["subtree"][0]["name"]
+            m = re.search("PE\[0..(\S+)\]", base_meshX_str)
+            if not m:
+                raise ValueError("Wrong mesh-X specification.")
+            base_meshX = int(m.group(1)) + 1
+
+            base_arith = base_arch_dict["subtree"][0]["local"][4]["attributes"] 
+            base_storage = base_arch_dict["subtree"][0]["local"]
+            data_entry = [str(base_meshX), str(base_arith["instances"])]
+            
+            for i in reversed(range(4)): 
+                data_entry.extend([str(base_storage[i]["attributes"]["instances"]),str(base_storage[i]["attributes"]["entries"])])
+            base_gb_dict = base_arch_dict["local"][0]
+            data_entry.extend([str(base_gb_dict["attributes"]["instances"]), str(base_gb_dict["attributes"]["entries"])])
         else:
             # Get nested dictionaries
             new_arith = new_arch["arch"]["arithmetic"]
@@ -223,34 +236,38 @@ def gen_dataset(new_arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5,
             for i in range(mem_levels): # Ignoring DRAM
                 data_entry.extend([str(new_storage[i]["instances"]), str(new_storage[i]["entries"])])
 
-                # Get the labels 
-                results_path = output_dir 
+        # Get the labels 
+        results_path = output_dir 
                 
-            cycle_path = results_path / f'results_arch_{config_str}_cycle.json'
-            energy_path = results_path / f'results_arch_{config_str}_energy.json'
-            print(f'path: {cycle_path}') 
-            try:
-                cycle = sum(utils.parse_json(cycle_path)['resnet50'].values())
-                energy = sum(utils.parse_json(energy_path)['resnet50'].values())
-                if cycle * energy > 0: 
-                    if min_cycle_energy: 
-                        if cycle * energy < min_cycle_energy:
-                            print(config_str)
-                            min_cycle_energy = cycle * energy
-                    else:
-                        min_cycle_energy = cycle * energy
-                    print(f'min_cycle_energy: {min_cycle_energy}')
-                    print('success')
-                    data_entry = [str(cycle), str(energy)] + data_entry
-                    data.append((config_str, data_entry))
-            except:
-                pass
+        cycle_path = results_path / f'results_arch_{config_str}_cycle.json'
+        energy_path = results_path / f'results_arch_{config_str}_energy.json'
+        area_path = results_path / f'results_arch_{config_str}_area.json'
 
+        print(f'path: {cycle_path}') 
+        try:
+            cycle = sum(utils.parse_json(cycle_path)['resnet50'].values())
+            energy = sum(utils.parse_json(energy_path)['resnet50'].values())
+            area = sum(utils.parse_json(area_path)['resnet50'].values())
+            edp = cycle * energy
+            adp = area * cycle
+            if cycle * energy > 0: 
+                if min_cycle_energy: 
+                    if edp < min_cycle_energy:
+                        print(config_str)
+                        min_cycle_energy = edp
+                else:
+                    min_cycle_energy = edp
+                print(f'min_cycle_energy: {min_cycle_energy}')
+                print('success')
+                data_entry = [str(cycle), str(energy)] + [str(area), str(edp), str(adp)]  + data_entry
+                data.append((config_str, data_entry))
+        except:
+            pass
 
-    print(data)
-    dataset_path = output_dir / "dataset.csv" 
+    config_str = glob_str.replace('_*.yaml', '')
+    dataset_path = output_dir / f'dataset{postfix}.csv'
     gen_dataset_csv(data, dataset_path)
-    return data
+    return min_cycle_energy
 
 
 def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
@@ -265,7 +282,7 @@ def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
     # Start schedule generation script for each layer on each arch
     for arch_file in arch_files:
 
-        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file] # "--model", "resnet50"]
+        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file] #"--model", "resnet50"]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
@@ -349,8 +366,8 @@ if __name__ == "__main__":
     base_arch_path = pathlib.Path(args.base_arch_path).resolve()
     arch_dir = pathlib.Path(args.arch_dir).resolve()
     output_dir = pathlib.Path(args.output_dir).resolve()
-
     # gen_arch_yaml(base_arch_path, arch_dir)
-    gen_data(arch_dir, output_dir)
+    # gen_data(arch_dir, output_dir)
+    gen_dataset(arch_dir, output_dir, arch_v3=True, postfix='_v3')
     # fetch_data(new_arch_dir, output_dir)
 
