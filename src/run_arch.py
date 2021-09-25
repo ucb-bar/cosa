@@ -8,7 +8,7 @@ import subprocess
 import re
 
 import utils
-from cosa_input_objs import Arch
+from cosa_input_objs import Arch, Prob
 
 _COSA_DIR = os.environ['COSA_DIR']
 
@@ -37,7 +37,7 @@ def construct_argparser():
     return parser
 
 
-def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, search_algo, opt_algo, arch_v3=False):
+def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, config_prefix, arch_v3=False):
     # Get base arch dictionary
     base_arch = utils.parse_yaml(base_arch_path)
 
@@ -75,7 +75,7 @@ def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, search_algo,
     hw_configs_str = "_".join(hw_configs_arr)
 
     # Construct filename for new arch
-    config_str = get_hw_config_str(hw_configs, search_algo, opt_algo)
+    config_str = get_hw_config_str(hw_configs, config_prefix)
 
     # Save new arch
     new_arch_path = new_arch_dir.resolve() / config_str
@@ -83,12 +83,12 @@ def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, search_algo,
     return config_str
 
 
-def get_hw_config_str(hw_configs, search_algo, opt_algo, arch_v3=False):
+def get_hw_config_str(hw_configs, config_prefix, arch_v3=False):
     hw_configs_arr = [str(i) for i in hw_configs]
     hw_configs_str = "_".join(hw_configs_arr)
 
     # Construct filename for new arch
-    config_str = f"arch_{search_algo}_{opt_algo}_"
+    config_str = f"arch_{config_prefix}"
     config_str += hw_configs_str 
     if arch_v3: 
         config_str += "_v3"
@@ -179,13 +179,18 @@ def gen_arch_yaml(base_arch_path, arch_dir):
                 utils.store_yaml(new_arch_path, new_arch)
 
 
+def gen_dataset_col_title():
+    col_str = ['name', 'unique_cycle_sum', 'unique_energy_sum', 'arith_meshX', 'arith_ins']
+    for i in range(5):
+        # col_str.extend([f'mem{i}_meshX', f'mem{i}_ins', f'mem{i}_ent'])
+        col_str.extend([f'mem{i}_ins', f'mem{i}_ent'])
+    key = ','.join(col_str)
+    return key
+
+
 def gen_dataset_csv(data, dataset_path):
     with open(dataset_path,  'w') as f:
-        col_str = ['name', 'unique_cycle_sum', 'unique_energy_sum', 'arith_meshX', 'arith_ins']
-        for i in range(5):
-            # col_str.extend([f'mem{i}_meshX', f'mem{i}_ins', f'mem{i}_ent'])
-            col_str.extend([f'mem{i}_ins', f'mem{i}_ent'])
-        key = ','.join(col_str)
+        key = gen_dataset_col_title()
         f.write(f'{key}\n')
         for d in data:
             key = d[0]
@@ -193,18 +198,73 @@ def gen_dataset_csv(data, dataset_path):
             f.write(f'{key},{col_str}\n')
 
 
-def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+def append_dataset_csv(data, dataset_path):
+    with open(dataset_path,  'a') as f:
+        for d in data:
+            key = d[0]
+            col_str = ','.join(d[1])
+            f.write(f'{key},{col_str}\n')
+            
+
+def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', layer_idx=None, workload_dir='../configs/workloads'):
+    # if network is None, return sum of 4 networks
+    # if layer is None, reuturn sum of specific network
+    cycle_path = output_dir / f'results_{config_str}_cycle.json'
+    energy_path = output_dir / f'results_{config_str}_energy.json'
+    area_path = output_dir /f'results_{config_str}_area.json'
+    print(f'path: {cycle_path}') 
+    if layer_idx: 
+        workload_dir = pathlib.Path(workload_dir).resolve()
+        model_dir = workload_dir / (model+'_graph')
+        layer_def_path = model_dir / 'unique_layers.yaml'
+        layers = utils.parse_yaml(layer_def_path)
+        layer = list(layers)[layer_idx]
+        prob_path = model_dir / (layer + '.yaml')
+        prob = Prob(prob_path)
+        prob_key = prob.config_str()
+
+        cycle = utils.parse_json(cycle_path)[model][prob_key]
+        energy = utils.parse_json(energy_path)[model][prob_key]
+        area = utils.parse_json(area_path)[model][prob_key]
+    else: 
+        if unique_sum: 
+            try:
+                cycle = sum(utils.parse_json(cycle_path)[model].values())
+                energy = sum(utils.parse_json(energy_path)[model].values())
+                area = list(utils.parse_json(area_path)[model].values())[0]
+            except:
+                raise
+        else:
+            # Load aggregated results JSON files
+            cycle_dict = utils.parse_json(cycle_path)
+            energy_dict = utils.parse_json(energy_path)
+            area_dict = utils.parse_json(area_path)
+
+            # Load the layer count file for the selected model
+            workload_dir = pathlib.Path(workload_dir).resolve()
+            model_dir = workload_dir / (model+'_graph')
+            layer_count_path = model_dir / ('layer_count.yaml')
+            layer_counts_model = utils.parse_yaml(layer_count_path)
+            
+            # Compute total cycle count/energy
+            cycle = total_layer_values(cycle_dict[model], layer_counts_model)
+            energy = total_layer_values(energy_dict[model], layer_counts_model)
+            
+            # Just one value for area
+            area = list(utils.parse_json(area_path)['resnet50'].values())[0]
+    return cycle, energy, area
+
+
+def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
-    arch_files.sort()
-    print(arch_files)
+    # arch_files.sort()
     data = []
     
     min_cycle_energy = None
     for arch_file in arch_files: 
         base_arch_str = arch_file.name 
-        print(base_arch_str)
-        m = re.search("arch_(\S+).yaml", base_arch_str)
+        m = re.search("(\S+).yaml", base_arch_str)
         if not m:
             raise ValueError("Wrong config string format.")
         config_str = m.group(1)
@@ -237,35 +297,42 @@ def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=F
                 data_entry.extend([str(new_storage[i]["instances"]), str(new_storage[i]["entries"])])
 
         # Get the labels 
-        results_path = output_dir 
-                
-        cycle_path = results_path / f'results_arch_{config_str}_cycle.json'
-        energy_path = results_path / f'results_arch_{config_str}_energy.json'
-        area_path = results_path / f'results_arch_{config_str}_area.json'
-
-        print(f'path: {cycle_path}') 
-        try:
-            cycle = sum(utils.parse_json(cycle_path)['resnet50'].values())
-            energy = sum(utils.parse_json(energy_path)['resnet50'].values())
-            area = sum(utils.parse_json(area_path)['resnet50'].values())
-            edp = cycle * energy
-            adp = area * cycle
-            if cycle * energy > 0: 
-                if min_cycle_energy: 
-                    if edp < min_cycle_energy:
-                        print(config_str)
-                        min_cycle_energy = edp
-                else:
+        cycle, energy, area = parse_results(output_dir, config_str, unique_sum=True, workload_dir='../configs/workloads')
+        edp = cycle * energy
+        adp = area * cycle
+        if cycle * energy > 0: 
+            if min_cycle_energy: 
+                if edp < min_cycle_energy:
+                    print(config_str)
                     min_cycle_energy = edp
-                print(f'min_cycle_energy: {min_cycle_energy}')
-                print('success')
-                data_entry = [str(cycle), str(energy)] + [str(area), str(edp), str(adp)]  + data_entry
-                data.append((config_str, data_entry))
-        except:
-            pass
+            else:
+                min_cycle_energy = edp
+            print(f'min_cycle_energy: {min_cycle_energy}')
 
+            # data_entry = [str(cycle), str(energy)] + [str(area), str(edp), str(adp)]  + data_entry
+            data_entry = [str(cycle), str(energy)] + data_entry
+            data.append((config_str, data_entry))
+    return data
+
+
+def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
     config_str = glob_str.replace('_*.yaml', '')
     dataset_path = output_dir / f'dataset{postfix}.csv'
+    print(dataset_path)
+
+    data = fetch_arch_perf_data(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
+    # print(data)
+    gen_dataset_csv(data, dataset_path)
+    return min_cycle_energy
+
+
+def gen_dataset_per_layer(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+    config_str = glob_str.replace('_*.yaml', '')
+    dataset_path = output_dir / f'dataset{postfix}.csv'
+    print(dataset_path)
+
+    data = fetch_arch_perf_data(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
+    # print(data)
     gen_dataset_csv(data, dataset_path)
     return min_cycle_energy
 
