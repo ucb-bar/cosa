@@ -99,14 +99,14 @@ def discretize_config(hw_config):
     return hw_config
 
 
-def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads'):
+def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads', model='resnet50', layer_idx=None):
     hw_config = discretize_config(hw_config)
     config_yaml_str = gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=arch_v3)
     # glob_str = f'arch_{config_prefix}*.yaml'
     glob_str = config_yaml_str
     config_str = config_yaml_str.replace('.yaml', '')
     gen_data(arch_dir, output_dir, glob_str)
-    cycle, energy, area = parse_results(output_dir, config_str, unique_sum, workload_dir)
+    cycle, energy, area = parse_results(output_dir, config_str, unique_sum, workload_dir=workload_dir, model=model, layer_idx=layer_idx)
     return (cycle, energy, area)
 
     
@@ -144,6 +144,6 @@ if __name__ == "__main__":
     # 4,256,256,1,128,256,128,16384,64,4096,1,32768
     hw_config = [4,256,256,16384,4096,32768]
     eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir=None)
-    #print(eval_result)
+    print(eval_result)
     # print(eval_result[0] * eval_result[1])
     # gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir)
