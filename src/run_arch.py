@@ -259,6 +259,11 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
 
 
 def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads'):
+    data, _ = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads')
+    return data
+
+
+def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads'):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
@@ -317,7 +322,7 @@ def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', 
             # data_entry = [str(cycle), str(energy)] + [str(area), str(edp), str(adp)]  + data_entry
             data_entry = [str(cycle), str(energy)] + data_entry
             data.append((config_str, data_entry))
-    return data
+    return data, min_cycle_energy
 
 
 def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
@@ -325,8 +330,7 @@ def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=F
     dataset_path = output_dir / f'dataset{postfix}.csv'
     print(dataset_path)
 
-    data = fetch_arch_perf_data(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
-    # print(data)
+    data, min_cycle_energy = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
     gen_dataset_csv(data, dataset_path)
     return min_cycle_energy
 
