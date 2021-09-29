@@ -258,10 +258,10 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
     return cycle, energy, area
 
 
-def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None):
+def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads'):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
-    # arch_files.sort()
+    arch_files.sort()
     data = []
     print(len(arch_files))
     
@@ -302,7 +302,7 @@ def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', 
                 data_entry.extend([str(new_storage[i]["instances"]), str(new_storage[i]["entries"])])
 
         # Get the labels 
-        cycle, energy, area = parse_results(output_dir, config_str, unique_sum=True, model=model, layer_idx=layer_idx, workload_dir='../configs/workloads')
+        cycle, energy, area = parse_results(output_dir, config_str, unique_sum=unique_sum, model=model, layer_idx=layer_idx, workload_dir=workload_dir)
         edp = cycle * energy
         adp = area * cycle
         if cycle * energy > 0: 
@@ -331,7 +331,7 @@ def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=F
     return min_cycle_energy
 
 
-def gen_dataset_per_layer(output_dir='/nscratch/qijing.huang/cosa/labels_others', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+def gen_dataset_per_layer(output_dir='/nscratch/qijing.huang/cosa/labels_resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
     workload_dir = '../configs/workloads' 
     workload_dir = pathlib.Path(workload_dir).resolve()
     output_dir = pathlib.Path(output_dir).resolve()
@@ -342,8 +342,8 @@ def gen_dataset_per_layer(output_dir='/nscratch/qijing.huang/cosa/labels_others'
     config_str = glob_str.replace('_*.yaml', '')
 
     # model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
-    #model_strs = ['resnet50']
-    model_strs = ['alexnet', 'resnext50_32x4d', 'deepbench']
+    model_strs = ['resnet50']
+    #model_strs = ['alexnet', 'resnext50_32x4d', 'deepbench']
 
     for model_str in model_strs: 
         model_dir = workload_dir / (model_str+'_graph')
@@ -365,6 +365,72 @@ def gen_dataset_per_layer(output_dir='/nscratch/qijing.huang/cosa/labels_others'
                 raise
         
 
+def gen_dataset_per_network(output_dir='/nscratch/qijing.huang/cosa/labels_resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+    unique_sum = True 
+    workload_dir = '../configs/workloads' 
+    workload_dir = pathlib.Path(workload_dir).resolve()
+    output_dir = pathlib.Path(output_dir).resolve()
+    
+    arch_dir = '/nscratch/qijing.huang/cosa/gen_arch/'
+    arch_dir = pathlib.Path(arch_dir).resolve()
+    glob_str = 'arch_*.yaml' 
+    config_str = glob_str.replace('_*.yaml', '')
+
+    # model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
+    model_strs = ['resnet50']
+    #model_strs = ['alexnet', 'resnext50_32x4d', 'deepbench']
+
+    for model_str in model_strs: 
+        if unique_sum: 
+            dataset_path = output_dir / f'dataset_{model_str}.csv'
+        else:
+            dataset_path = output_dir / f'dataset_{model_str}_actual.csv'
+        try:
+            data = fetch_arch_perf_data(arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles, model=model_str, layer_idx=None, unique_sum=unique_sum)
+            gen_dataset_csv(data, dataset_path)
+            print(f'gen: {dataset_path}')
+        except:
+            raise
+
+
+def gen_dataset_all(per_network_dataset_dir='/nscratch/qijing.huang/cosa/network_db', unique_sum=False):
+    model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
+    
+    per_network_dataset_dir = pathlib.Path(per_network_dataset_dir).resolve()
+    dataset_path = per_network_dataset_dir / 'dataset_all.csv'
+    if not unique_sum: 
+        dataset_path = per_network_dataset_dir / 'dataset_all_actual.csv'
+    network_data = []
+    for model_str in model_strs:
+        if unique_sum: 
+            path = per_network_dataset_dir / f'dataset_{model_str}.csv' 
+        else:
+            path = per_network_dataset_dir / f'dataset_{model_str}_actual.csv' 
+
+        per_arch_data = []
+        with open(path, 'r') as f:
+            lines = f.readlines()
+            for line in lines: 
+                line_arr = line.split(',') 
+                per_arch_data.append(line_arr)
+        
+        network_data.append(per_arch_data)    
+    
+    all_data = network_data[0].copy()
+    for line, per_arch_data in enumerate(all_data): 
+        if line == 0:
+            continue
+        for entry in [1,2]:
+            entry_network_sum = 0.0
+            for network_idx in range(len(model_strs)):
+                entry_network_sum += float(network_data[network_idx][line][entry])
+            all_data[line][entry] = str(entry_network_sum)
+    with open(dataset_path, 'w') as f:
+        for line in all_data:
+            f.write(','.join(line))
+    print(f'gen: {dataset_path}')
+
+
 def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
@@ -377,7 +443,7 @@ def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
     # Start schedule generation script for each layer on each arch
     for arch_file in arch_files:
 
-        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file] #"--model", "resnet50"]
+        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file, "--model", "resnet50"]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
@@ -466,4 +532,6 @@ if __name__ == "__main__":
     # gen_dataset(arch_dir, output_dir, arch_v3=True, postfix='_v3')
     # fetch_data(new_arch_dir, output_dir)
     gen_dataset_per_layer()
+    # gen_dataset_per_network()
+    # gen_dataset_all()
 
