@@ -259,7 +259,7 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
 
 
 def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads'):
-    data, _ = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads')
+    data, _ = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles, model=model, layer_idx=layer_idx, unique_sum=unique_sum, workload_dir=workload_dir)
     return data
 
 
