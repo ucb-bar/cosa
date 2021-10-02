@@ -219,6 +219,14 @@ def parse_yaml(yaml_path):
         data = yaml.full_load(f)
     return data
 
+def parse_csv(csv_path):
+    data = []
+    with open(csv_path, 'r') as f:
+        lines = f.readlines()
+        for line in lines: 
+            line_arr = line.split(',') 
+            data.append(line_arr)
+    return data 
 
 def store_yaml(yaml_path, data):
     with open(yaml_path, 'w') as f:

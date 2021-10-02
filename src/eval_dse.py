@@ -23,20 +23,21 @@ def construct_argparser():
                         '--output_dir',
                         type=str,
                         help='Output Folder',
-                        default='dse_output_dir_nz2_1_predictor',
+                        default='dse_output_dir_nz2_small_MN_predictor',
                         # default='dse_output_dir_deep_predictor_1',
                         )
     parser.add_argument('-a',
                         '--arch_dir',
                         type=str,
                         help='Generated Archtecture Folder',
-                        default='dse_arch_nz2_predictor',
+                        default='dse_arch_nz2_small_MN_predictor',
                         )
     parser.add_argument('-c',
                         '--config_dir',
                         type=str,
                         help='DSE Config',
-                        default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_nz2_predictor'
+                        default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_nz2_small_MN_predictor'
+                        # default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_nz2_predictor'
                         # default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_deep_pred_1_predictor'
                         # default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_new7_predictor'
                         # default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_predictor'
@@ -131,6 +132,96 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir):
     print(best_perfs)
 
 
+def get_best_entry(data, metric_idx=[1,2]):
+    best_perf = None
+    best_entry = None
+    for line, per_arch_data in enumerate(data): 
+        perf_prod = 1.0
+        for entry in metric_idx:
+            perf_prod *= float(per_arch_data[entry])
+        if line == 0:
+            best_perf = perf_prod
+            best_entry = per_arch_data
+        if perf_prod < best_perf:
+            best_perf = perf_prod
+            best_entry = per_arch_data
+    return best_perf, best_entry
+
+
+def parse_best_results(dataset_path, n_entries=None):
+    data = utils.parse_csv(dataset_path)
+    if n_entries is None:
+        data = data[1:]
+    else:
+        data = data[1: n_entries+1]
+    best_metric, best_entry = get_best_entry(data) 
+    print(f'dataset_path: {dataset_path}') 
+    print(f'best_entry: {best_entry}') 
+    print(f'best_metric: {best_metric}') 
+    return best_metric, best_entry
+
+
+def parse_search_results():
+    samples = [50, 100, 500, 1000, 2000]
+    result_data = {}
+    result_data['num_sample'] = samples
+
+    result_data['dataset_best_1'] = [8798868924440581.0, 8798868924440581.0, 8676699496627586.0, 8676699496627586.0, 8676699496627586.0] 
+    result_data['dataset_mean_1'] = [3.321781171088311e+16, 3.0531516714279996e+16, 2.898710045164625e+16, 2.9947367986199504e+16, 2.999884242291844e+16] 
+    result_data['dataset_median_1'] = [3.6414777147006296e+16, 3.2195480454620108e+16, 2.4187872490839704e+16, 2.880585407106034e+16, 2.7941558106960584e+16] 
+    
+    # parse original dataset
+    path = pathlib.Path('/scratch/qijing.huang/cosa/src') 
+
+    search_algos = ['random_search', 'optimal_search']
+    opt_algos = ['Newton', 'sgd']
+
+    # parse VAE results 
+    seeds = [1, 1234]
+    for seed in seeds: 
+        for search_algo in search_algos: 
+            for opt_algo in opt_algos: 
+                entry_name = f'vae_{search_algo}_{opt_algo}_{seed}'
+                if seed == 1:
+                    seed_str=''
+                else:
+                    seed_str=f'_seed_{seed}'
+                data_entry = []
+                for num_sample in samples: 
+                    output_dir = path / f'dse_output_dir_dataset_{num_sample}{seed_str}'  
+                    dataset_path = output_dir / f'dataset_{search_algo}_{opt_algo}.csv'
+                    best_metric, _ = parse_best_results(dataset_path, num_sample)
+                    data_entry.append(best_metric)
+                result_data[entry_name] = data_entry
+
+    # parse BO results 
+    seeds = [1, 1234]
+    for seed in seeds:
+        entry_name = f'bo_{seed}'
+        data_entry = []
+        for num_sample in samples:
+            output_dir_bo = pathlib.Path('/nscratch/qijing.huang/cosa/results/bo_search/')
+            dataset_path = output_dir_bo / f'dataset_s{seed}.csv'
+            best_metric, _ = parse_best_results(dataset_path, num_sample)
+            data_entry.append(best_metric)
+        result_data[entry_name] = data_entry
+            
+    seeds = [6, 7]
+    for seed in seeds:
+        entry_name = f'random_{seed}'
+        data_entry = []
+        for num_sample in samples:
+            output_dir_bo = pathlib.Path('/nscratch/qijing.huang/cosa/results/random_search/')
+            dataset_path = output_dir_bo / f'seed_{seed}.csv'
+            best_metric, _ = parse_best_results(dataset_path, num_sample)
+            data_entry.append(best_metric)
+        result_data[entry_name] = data_entry
+           
+    # print(result_data)
+    results_path = 'results.json'
+    utils.store_json(results_path, result_data, indent=2)
+
+
 if __name__ == "__main__":
     parser = construct_argparser()
     args = parser.parse_args()
@@ -139,11 +230,14 @@ if __name__ == "__main__":
     arch_dir = pathlib.Path(args.arch_dir).resolve()
     output_dir = pathlib.Path(args.output_dir).resolve()
     config_dir = pathlib.Path(args.config_dir).resolve()
+    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir)
+    
+    # parse_best_results('dse_output_dir_dataset_500/dataset_optimal_search_Newton.csv', 10)
+    #parse_search_results()
     
     # mesh x [3, 4, 5, 8, 10, 12, 14] 
     # 4,256,256,1,128,256,128,16384,64,4096,1,32768
-    hw_config = [4,256,256,16384,4096,32768]
-    eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir=None)
-    print(eval_result)
+    # hw_config = [4,256,256,16384,4096,32768]
+    # eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir=None)
+    # print(eval_result)
     # print(eval_result[0] * eval_result[1])
-    # gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir)

@@ -411,13 +411,7 @@ def gen_dataset_all(per_network_dataset_dir='/nscratch/qijing.huang/cosa/network
         else:
             path = per_network_dataset_dir / f'dataset_{model_str}_actual.csv' 
 
-        per_arch_data = []
-        with open(path, 'r') as f:
-            lines = f.readlines()
-            for line in lines: 
-                line_arr = line.split(',') 
-                per_arch_data.append(line_arr)
-        
+        per_arch_data = utils.parse_csv(path)
         network_data.append(per_arch_data)    
     
     all_data = network_data[0].copy()
