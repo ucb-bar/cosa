@@ -34,7 +34,6 @@ def construct_argparser():
                         type=str,
                         help='Generated Archtecture Folder',
                         default='arch_bo',
-                        #default='dse_arch_nz2_predictor',
                         )
     parser.add_argument('-bap',
                         '--base_arch_path',
@@ -67,7 +66,8 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, init_samples=0):
 
     pbounds = {}
     bounds = [64, 32, 256, 256, 4096, 256]
-    scales = [1, 128, 1, 2**8, 1, 2**10]
+    # scales = [1, 128, 1, 2**8, 1, 2**10]
+    scales = [1, 1, 1, 2**8, 1, 2**10]
     
     for i, bound in enumerate(bounds):
         pbounds[i] = (1, bound)
