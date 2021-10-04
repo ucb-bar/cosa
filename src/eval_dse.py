@@ -42,12 +42,26 @@ def construct_argparser():
                         # default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_new7_predictor'
                         # default='/scratch/qijing.huang/CoSA_VAE_DSE/results/cosa_data_VAE_predictor'
                         )
+    parser.add_argument(
+                        '--search_algo_postfix',
+                        type=str,
+                        help='Postfix for search algo for different seeds',
+                        default='',
+                        )
+
     parser.add_argument('-bap',
                         '--base_arch_path',
                         type=str,
                         help='Hardware Architecture Path',
                         default=f'{_COSA_DIR}/configs/arch/simba_dse.yaml',
                         )
+    parser.add_argument(
+                        '--model',
+                        type=str,
+                        help='Target DNN Model',
+                        default='resnet50',
+                        )
+
     return parser
 
 
@@ -55,8 +69,8 @@ def round_config(i, base=2):
     return math.ceil(i / base) * base
 
 
-def parse_hw_configs(config_dir, search_algo, opt_algo):
-    search_dir = config_dir / search_algo
+def parse_hw_configs(config_dir, search_algo, opt_algo, search_algo_postfix=""):
+    search_dir = config_dir / f'{search_algo}{search_algo_postfix}'
     glob_str = f'{opt_algo}_*.txt'
     config_files = list(search_dir.glob(glob_str))
     hw_configs = [] 
@@ -111,7 +125,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch
     return (cycle, energy, area)
 
     
-def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir):
+def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50'):
     search_algos = ['random_search', 'optimal_search']
     #search_algos = ['optimal_search']
     opt_algos = ['Newton', 'sgd']
@@ -120,13 +134,13 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir):
     for search_algo in search_algos:
         for opt_algo in opt_algos: 
             glob_str = f'arch_{search_algo}_{opt_algo}_*.yaml'
-            hw_configs = parse_hw_configs(config_dir, search_algo, opt_algo)
+            hw_configs = parse_hw_configs(config_dir, search_algo, opt_algo, search_algo_postfix)
             for hw_config in hw_configs: 
                 config_prefix = f'{search_algo}_{opt_algo}_'
                 gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=False)
 
-            gen_data(arch_dir, output_dir, glob_str)
-            best_perf = gen_dataset(arch_dir, output_dir, glob_str, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}')
+            gen_data(arch_dir, output_dir, glob_str, model=model)
+            best_perf = gen_dataset(arch_dir, output_dir, glob_str=glob_str, model=model, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}')
             best_perfs.append(best_perf)
     print("Optimal Design Points")
     print(best_perfs)
@@ -161,7 +175,6 @@ def parse_best_results(dataset_path, n_entries=None):
     return best_metric, best_entry
 
 
-
 if __name__ == "__main__":
     parser = construct_argparser()
     args = parser.parse_args()
@@ -170,7 +183,10 @@ if __name__ == "__main__":
     arch_dir = pathlib.Path(args.arch_dir).resolve()
     output_dir = pathlib.Path(args.output_dir).resolve()
     config_dir = pathlib.Path(args.config_dir).resolve()
-    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir)
+
+    model = args.model
+    
+    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model)
     
     # parse_best_results('dse_output_dir_dataset_500/dataset_optimal_search_Newton.csv', 10)
     #parse_search_results()

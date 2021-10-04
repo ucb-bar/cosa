@@ -325,12 +325,12 @@ def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.ya
     return data, min_cycle_energy
 
 
-def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
     config_str = glob_str.replace('_*.yaml', '')
     dataset_path = output_dir / f'dataset{postfix}.csv'
     print(dataset_path)
 
-    data, min_cycle_energy = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
+    data, min_cycle_energy = fetch_arch_perf_data_func(new_arch_dir, output_dir, model=model, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
     gen_dataset_csv(data, dataset_path)
     return min_cycle_energy
 
