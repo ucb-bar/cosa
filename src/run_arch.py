@@ -425,7 +425,7 @@ def gen_dataset_all(per_network_dataset_dir='/scratch/qijing.huang/cosa_ucb-bar/
     print(f'gen: {dataset_path}')
 
 
-def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model=None):
+def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50'):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
