@@ -335,19 +335,17 @@ def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=F
     return min_cycle_energy
 
 
-def gen_dataset_per_layer(output_dir='/nscratch/qijing.huang/cosa/labels_resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+def gen_dataset_per_layer(output_dir='/scratch/qijing.huang/cosa_ucb-bar/src/output_dir', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
     workload_dir = '../configs/workloads' 
     workload_dir = pathlib.Path(workload_dir).resolve()
     output_dir = pathlib.Path(output_dir).resolve()
     
-    arch_dir = '/nscratch/qijing.huang/cosa/gen_arch/'
+    arch_dir = '/scratch/qijing.huang/cosa_ucb-bar/src/gen_arch/'
     arch_dir = pathlib.Path(arch_dir).resolve()
     glob_str = 'arch_*.yaml' 
     config_str = glob_str.replace('_*.yaml', '')
 
-    # model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
-    model_strs = ['resnet50']
-    #model_strs = ['alexnet', 'resnext50_32x4d', 'deepbench']
+    model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
 
     for model_str in model_strs: 
         model_dir = workload_dir / (model_str+'_graph')
@@ -369,20 +367,18 @@ def gen_dataset_per_layer(output_dir='/nscratch/qijing.huang/cosa/labels_resnet5
                 raise
         
 
-def gen_dataset_per_network(output_dir='/nscratch/qijing.huang/cosa/labels_resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+def gen_dataset_per_network(output_dir='/scratch/qijing.huang/cosa_ucb-bar/src/output_dir', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
     unique_sum = True 
     workload_dir = '../configs/workloads' 
     workload_dir = pathlib.Path(workload_dir).resolve()
     output_dir = pathlib.Path(output_dir).resolve()
     
-    arch_dir = '/nscratch/qijing.huang/cosa/gen_arch/'
+    arch_dir = '/scratch/qijing.huang/cosa_ucb-bar/src/gen_arch/'
     arch_dir = pathlib.Path(arch_dir).resolve()
     glob_str = 'arch_*.yaml' 
     config_str = glob_str.replace('_*.yaml', '')
 
-    # model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
-    model_strs = ['resnet50']
-    #model_strs = ['alexnet', 'resnext50_32x4d', 'deepbench']
+    model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
 
     for model_str in model_strs: 
         if unique_sum: 
@@ -397,7 +393,7 @@ def gen_dataset_per_network(output_dir='/nscratch/qijing.huang/cosa/labels_resne
             raise
 
 
-def gen_dataset_all(per_network_dataset_dir='/nscratch/qijing.huang/cosa/network_db', unique_sum=False):
+def gen_dataset_all(per_network_dataset_dir='/scratch/qijing.huang/cosa_ucb-bar/src/output_dir', unique_sum=True):
     model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
     
     per_network_dataset_dir = pathlib.Path(per_network_dataset_dir).resolve()
@@ -429,7 +425,7 @@ def gen_dataset_all(per_network_dataset_dir='/nscratch/qijing.huang/cosa/network
     print(f'gen: {dataset_path}')
 
 
-def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
+def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model=None):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
@@ -441,7 +437,9 @@ def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
     # Start schedule generation script for each layer on each arch
     for arch_file in arch_files:
 
-        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file, "--model", "resnet50"]
+        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file]
+        if model:
+            cmd += ["--model", model]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
@@ -529,7 +527,7 @@ if __name__ == "__main__":
     # gen_data(arch_dir, output_dir)
     # gen_dataset(arch_dir, output_dir, arch_v3=True, postfix='_v3')
     # fetch_data(new_arch_dir, output_dir)
-    gen_dataset_per_layer()
+    # gen_dataset_per_layer()
     # gen_dataset_per_network()
-    # gen_dataset_all()
+    gen_dataset_all()
 
