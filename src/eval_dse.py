@@ -184,6 +184,7 @@ if __name__ == "__main__":
     output_dir = pathlib.Path(args.output_dir).resolve()
     config_dir = pathlib.Path(args.config_dir).resolve()
 
+    output_dir.mkdir(parents=True, exist_ok=True)
     model = args.model
     
     gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model)
