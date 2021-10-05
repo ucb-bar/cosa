@@ -73,7 +73,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, c
     gen_data(arch_dir, output_dir, glob_str, model=model)
     cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model)
     data = fetch_arch_perf_data(arch_dir, output_dir, glob_str, arch_v3, mem_levels=5, model=model)
-    if data[0] != -1:
+    if cycle > 0:
         append_dataset_csv(data, dataset_path)
     return (cycle, energy, area)
 
