@@ -152,6 +152,7 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
 
 def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1):
     assert(num_samples > init_samples)
+    random.seed(random_seed)
 
     dataset_path = output_dir / f'dataset_{model}_random_s{random_seed}.csv'
     with open(dataset_path,  'w') as f:
