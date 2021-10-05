@@ -214,6 +214,7 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
     area_path = output_dir /f'results_{config_str}_area.json'
     area = -1
     print(f'path: {cycle_path}') 
+
     if layer_idx is not None: 
         workload_dir = pathlib.Path(workload_dir).resolve()
         model_dir = workload_dir / (model+'_graph')
@@ -230,13 +231,18 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
             area = utils.parse_json(area_path)[model][prob_key]
     else: 
         if unique_sum: 
+            unique_layers = {'alexnet': 8, 'resnet50':24, 'resnext50_32x4d':25, 'deepbench':9}
             try:
+                num_layers = len(utils.parse_json(cycle_path)[model].values())
+                if num_layers != unique_layers[model]:
+                    return -1, -1, -1
+                
                 cycle = sum(utils.parse_json(cycle_path)[model].values())
                 energy = sum(utils.parse_json(energy_path)[model].values())
                 if arch_v3:
                     area = list(utils.parse_json(area_path)[model].values())[0]
             except:
-                raise
+                return -1, -1, -1
         else:
             # Load aggregated results JSON files
             cycle_dict = utils.parse_json(cycle_path)
@@ -310,13 +316,14 @@ def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.ya
         cycle, energy, area = parse_results(output_dir, config_str, unique_sum=unique_sum, model=model, layer_idx=layer_idx, workload_dir=workload_dir)
         edp = cycle * energy
         adp = area * cycle
-        if cycle * energy > 0: 
+        if cycle * energy > 0 and cycle > 0 and energy > 0: 
             if min_cycle_energy: 
                 if edp < min_cycle_energy:
                     print(config_str)
                     min_cycle_energy = edp
             else:
                 min_cycle_energy = edp
+            print(f'edp: {edp}')
             print(f'min_cycle_energy: {min_cycle_energy}')
 
             # data_entry = [str(cycle), str(energy)] + [str(area), str(edp), str(adp)]  + data_entry

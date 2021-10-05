@@ -84,6 +84,7 @@ def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model):
             except:
                 # Set to -1 and move on the next config
                 full_results[k][model_str][prob.config_str()] = -1
+                raise
 
     for k in full_results:
         full_result_path = pathlib.Path(output_dir) / f'results_{arch_path.stem}_{k}.json'

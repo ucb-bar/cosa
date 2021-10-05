@@ -591,6 +591,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
         logging.info(f'status_dict: {status_dict}')
     except:
         logging.error('Error: invalid schedule.')
+        raise
 
     return status_dict
 
