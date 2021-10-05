@@ -73,7 +73,8 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, c
     gen_data(arch_dir, output_dir, glob_str, model=model)
     cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model)
     data = fetch_arch_perf_data(arch_dir, output_dir, glob_str, arch_v3, mem_levels=5, model=model)
-    append_dataset_csv(data, dataset_path)
+    if data[0] != -1:
+        append_dataset_csv(data, dataset_path)
     return (cycle, energy, area)
 
 
@@ -185,7 +186,7 @@ def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resn
             val = random.randint(1, bounds[i]) * scales[i]
             hw_config.append(val)
         eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model)
-        if eval_result is None:
+        if eval_result[0] == -1:
             print("Invalid arch:", hw_config)
             continue
         
@@ -243,5 +244,5 @@ if __name__ == "__main__":
     #print(eval_result)
     # print(eval_result[0] * eval_result[1])
     num_samples = args.num_samples
-    # bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
-    random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
+    bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
+    # random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
