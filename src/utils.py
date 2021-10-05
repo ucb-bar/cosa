@@ -224,9 +224,18 @@ def parse_csv(csv_path):
     with open(csv_path, 'r') as f:
         lines = f.readlines()
         for line in lines: 
+            line = line.strip()
             line_arr = line.split(',') 
             data.append(line_arr)
     return data 
+
+def parse_csv_line(csv_path, line_idx):
+    with open(csv_path, 'r') as f:
+        lines = f.readlines()
+        line = lines[line_idx]
+        line = line.strip()
+        line_arr = line.split(',') 
+    return line_arr 
 
 def store_yaml(yaml_path, data):
     with open(yaml_path, 'w') as f:

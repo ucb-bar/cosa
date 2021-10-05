@@ -179,11 +179,14 @@ def gen_arch_yaml(base_arch_path, arch_dir):
                 utils.store_yaml(new_arch_path, new_arch)
 
 
-def gen_dataset_col_title():
+def gen_dataset_col_title(with_layer=False):
     col_str = ['name', 'unique_cycle_sum', 'unique_energy_sum', 'arith_meshX', 'arith_ins']
     for i in range(5):
         # col_str.extend([f'mem{i}_meshX', f'mem{i}_ins', f'mem{i}_ent'])
         col_str.extend([f'mem{i}_ins', f'mem{i}_ent'])
+    if with_layer:
+        for i in range(9):
+            col_str.append(f'prob_{i}') 
     key = ','.join(col_str)
     return key
 
@@ -400,6 +403,32 @@ def gen_dataset_per_network(output_dir='/scratch/qijing.huang/cosa_ucb-bar/src/o
             raise
 
 
+def gen_dataset_all_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db', output_dir='/scratch/qijing.huang/cosa_dataset/db/'):
+    per_layer_dataset_dir = pathlib.Path(per_layer_dataset_dir).resolve()
+    output_dir = pathlib.Path(output_dir).resolve()
+    per_layer_dataset_files = per_layer_dataset_dir.glob('dataset_*.csv')
+    
+    dataset_path = output_dir / 'dataset_all_layer.csv'
+    with open(dataset_path,  'w') as f:
+        key = gen_dataset_col_title(with_layer=True)
+        f.write(f'{key}\n')
+
+        per_layer_dataset_files = list(per_layer_dataset_files)
+        first_layer_dataset_file = per_layer_dataset_files[0]
+        per_arch_data = utils.parse_csv(first_layer_dataset_file)
+        
+        for arch_idx, arch_data in enumerate(per_arch_data[1:]):
+            for per_layer_dataset_file in per_layer_dataset_files:
+                layer_line = utils.parse_csv_line(per_layer_dataset_file, arch_idx+1)
+                layer_config_str = per_layer_dataset_file.name
+                layer_config_str = layer_config_str.replace('.csv','')
+                layer_config_str = layer_config_str.replace('dataset_','')
+                layer_config = layer_config_str.split('_')[:-2]
+                new_data = layer_line + layer_config
+                new_data_str = ','.join(new_data) 
+                f.write(f'{new_data_str}\n')
+
+
 def gen_dataset_all(per_network_dataset_dir='/scratch/qijing.huang/cosa_ucb-bar/src/output_dir', unique_sum=True):
     model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
     
@@ -536,5 +565,6 @@ if __name__ == "__main__":
     # fetch_data(new_arch_dir, output_dir)
     # gen_dataset_per_layer()
     # gen_dataset_per_network()
-    gen_dataset_all()
+    #gen_dataset_all()
+    gen_dataset_all_layer()
 
