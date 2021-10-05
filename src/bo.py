@@ -159,14 +159,6 @@ def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resn
         key = gen_dataset_col_title()
         f.write(f'{key}\n')
 
-    pbounds = {}
-    bounds = [64, 32, 256, 256, 4096, 256]
-    # scales = [1, 128, 1, 2**8, 1, 2**10]
-    scales = [1, 1, 1, 2**8, 1, 2**10]
-    
-    for i, bound in enumerate(bounds):
-        pbounds[i] = (1, bound)
-
     bounds = [64, 32, 256, 256, 4096, 256]
     scales = [1, 1, 1, 2**8, 1, 2**10]
     print(f"Bounds: {bounds}")
