@@ -6,6 +6,7 @@ import logging
 import os
 import pathlib
 import math
+import random
 
 import utils
 from cosa import run_timeloop
@@ -73,7 +74,8 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, c
     cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model)
     assert(cycle > 0 and energy > 0)
     data = fetch_arch_perf_data(arch_dir, output_dir, glob_str, arch_v3, mem_levels=5, model=model)
-    append_dataset_csv(data, dataset_path)
+    if cycle > 0:
+        append_dataset_csv(data, dataset_path)
     return (cycle, energy, area)
 
 
@@ -148,7 +150,75 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
             target=target,
         )
         print(f'it: {iteration}, {target}, {next_point_to_probe}')
+
+def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1):
+    assert(num_samples > init_samples)
+
+    dataset_path = output_dir / f'dataset_{model}_random_s{random_seed}.csv'
+    with open(dataset_path,  'w') as f:
+        key = gen_dataset_col_title()
+        f.write(f'{key}\n')
+
+    pbounds = {}
+    bounds = [64, 32, 256, 256, 4096, 256]
+    # scales = [1, 128, 1, 2**8, 1, 2**10]
+    scales = [1, 1, 1, 2**8, 1, 2**10]
+    
+    for i, bound in enumerate(bounds):
+        pbounds[i] = (1, bound)
+
+    bounds = [64, 32, 256, 256, 4096, 256]
+    scales = [1, 1, 1, 2**8, 1, 2**10]
+    print(f"Bounds: {bounds}")
+    print(f"Scales: {scales}")
+
+    best_cycle = float("inf")
+    best_cycle_arch = None
+    best_energy = float("inf")
+    best_energy_arch = None
+    best_edp = float("inf")
+    best_edp_arch = None
+    num_tested = 0
+    success = 0
+    while success < num_samples:
+        num_tested += 1
+        hw_config = []
+        for i in range(len(bounds)):
+            val = random.randint(1, bounds[i]) * scales[i]
+            hw_config.append(val)
+        eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model)
+        if eval_result[0] == -1:
+            print("Invalid arch:", hw_config)
+            continue
         
+        cycle = eval_result[0]
+        energy = eval_result[1]
+        edp = cycle * energy
+
+        print("Arch evaluated:", hw_config)
+        print(f"Cycle: {cycle}, Energy: {energy}, EDP: {edp}")
+        success += 1
+
+        if cycle < best_cycle:
+            best_cycle = cycle
+            best_cycle_arch = hw_config
+        if energy < best_energy:
+            best_energy = energy
+            best_energy_arch = hw_config
+        if edp < best_edp:
+            best_edp = edp
+            best_edp_arch = hw_config
+
+        if num_tested == num_samples:
+            print(f"Best cycle count: {best_cycle}, Arch: {best_cycle_arch}")
+            print(f"Best energy: {best_energy}, Arch: {best_energy_arch}")
+            print(f"Best EDP: {best_edp}, Arch: {best_edp_arch}")
+            print(f"{success} valid arch out of {num_tested} randomly searched")
+
+    print(f"Best cycle count: {best_cycle}, Arch: {best_cycle_arch}")
+    print(f"Best energy: {best_energy}, Arch: {best_energy_arch}")
+    print(f"Best EDP: {best_edp}, Arch: {best_edp_arch}")
+    print(f"{success} valid arch out of {num_tested} randomly searched")
         
 if __name__ == "__main__":
     parser = construct_argparser()
@@ -176,3 +246,4 @@ if __name__ == "__main__":
     # print(eval_result[0] * eval_result[1])
     num_samples = args.num_samples
     bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
+    # random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
