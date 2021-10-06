@@ -126,7 +126,7 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
             target = cycle * energy / target_scale 
         elif obj == 'latency':
             target = cycle
-        elif obj == 'energy'
+        elif obj == 'energy':
             target = energy
 
         init_data.append((next_point_to_probe, target))
