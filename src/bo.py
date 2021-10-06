@@ -24,6 +24,8 @@ _COSA_DIR = os.environ['COSA_DIR']
 
 def construct_argparser():
     parser = argparse.ArgumentParser(description='Run Configuration')
+
+    parser.add_argument('--obj', default='edp', help='valid options [edp, latency, energy]')
     parser.add_argument('-o',
                         '--output_dir',
                         type=str,
@@ -79,7 +81,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, c
     return (cycle, energy, area)
 
 
-def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1):
+def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, obj='edp'):
     assert(num_samples > init_samples)
 
     dataset_path = output_dir / f'dataset_{model}_s{random_seed}.csv'
@@ -120,7 +122,13 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
             hw_config.append(next_point_to_probe[i] * scales[i])
 
         cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model)
-        target = cycle * energy / target_scale 
+        if obj == 'edp':
+            target = cycle * energy / target_scale 
+        elif obj == 'latency':
+            target = cycle
+        elif obj == 'energy'
+            target = energy
+
         init_data.append((next_point_to_probe, target))
 
     for iteration in range(init_samples):
@@ -159,14 +167,6 @@ def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resn
     with open(dataset_path,  'w') as f:
         key = gen_dataset_col_title()
         f.write(f'{key}\n')
-
-    pbounds = {}
-    bounds = [64, 32, 256, 256, 4096, 256]
-    # scales = [1, 128, 1, 2**8, 1, 2**10]
-    scales = [1, 1, 1, 2**8, 1, 2**10]
-    
-    for i, bound in enumerate(bounds):
-        pbounds[i] = (1, bound)
 
     bounds = [64, 32, 256, 256, 4096, 256]
     scales = [1, 1, 1, 2**8, 1, 2**10]
@@ -246,5 +246,5 @@ if __name__ == "__main__":
     #print(eval_result)
     # print(eval_result[0] * eval_result[1])
     num_samples = args.num_samples
-    bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
+    bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
     # random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
