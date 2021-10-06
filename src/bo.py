@@ -26,6 +26,7 @@ def construct_argparser():
     parser = argparse.ArgumentParser(description='Run Configuration')
 
     parser.add_argument('--obj', default='edp', help='valid options [edp, latency, energy]')
+    parser.add_argument('--search_algo', default='bo', help='valid options [bo, random]')
     parser.add_argument('-o',
                         '--output_dir',
                         type=str,
@@ -56,7 +57,6 @@ def construct_argparser():
                         help='Number of total samples',
                         default=2100,
                         )
-
     parser.add_argument(
                         '--model',
                         type=str,
@@ -246,5 +246,7 @@ if __name__ == "__main__":
     #print(eval_result)
     # print(eval_result[0] * eval_result[1])
     num_samples = args.num_samples
-    bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
-    # random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model)
+    if args.search_algo == 'bo':
+        bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
+    elif args.search_algo == 'random':
+        random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
