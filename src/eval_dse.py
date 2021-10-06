@@ -19,6 +19,7 @@ _COSA_DIR = os.environ['COSA_DIR']
 
 def construct_argparser():
     parser = argparse.ArgumentParser(description='Run Configuration')
+    parser.add_argument('--obj', default='edp', help='valid options [edp, latency, energy]')
     parser.add_argument('-o',
                         '--output_dir',
                         type=str,
@@ -125,7 +126,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch
     return (cycle, energy, area)
 
     
-def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50'):
+def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50', obj='edp'):
     search_algos = ['random_search', 'optimal_search']
     #search_algos = ['optimal_search']
     opt_algos = ['Newton', 'sgd']
@@ -140,7 +141,7 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search
                 gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=False)
 
             gen_data(arch_dir, output_dir, glob_str, model=model)
-            best_perf = gen_dataset(arch_dir, output_dir, glob_str=glob_str, model=model, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}')
+            best_perf = gen_dataset(arch_dir, output_dir, glob_str=glob_str, model=model, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}', obj=obj)
             best_perfs.append(best_perf)
     print("Optimal Design Points")
     print(best_perfs)
@@ -187,7 +188,7 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
     model = args.model
     
-    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model)
+    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model, obj=args.obj)
     
     # parse_best_results('dse_output_dir_dataset_500/dataset_optimal_search_Newton.csv', 10)
     #parse_search_results()

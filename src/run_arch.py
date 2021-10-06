@@ -267,19 +267,19 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
     return cycle, energy, area
 
 
-def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads'):
-    data, _ = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles, model=model, layer_idx=layer_idx, unique_sum=unique_sum, workload_dir=workload_dir)
+def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads', obj='edp'):
+    data, _ = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles, model=model, layer_idx=layer_idx, unique_sum=unique_sum, workload_dir=workload_dir, obj=obj)
     return data
 
 
-def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads'):
+def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads', obj='edp'):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
     data = []
     print(len(arch_files))
     
-    min_cycle_energy = None
+    min_metric = None
     for arch_file in arch_files: 
         base_arch_str = arch_file.name 
         m = re.search("(\S+).yaml", base_arch_str)
@@ -317,32 +317,40 @@ def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.ya
 
         # Get the labels 
         cycle, energy, area = parse_results(output_dir, config_str, unique_sum=unique_sum, model=model, layer_idx=layer_idx, workload_dir=workload_dir)
-        edp = cycle * energy
-        adp = area * cycle
-        if cycle * energy > 0 and cycle > 0 and energy > 0: 
-            if min_cycle_energy: 
-                if edp < min_cycle_energy:
+        metric = 0
+        if obj == 'edp':
+            metric = cycle * energy
+        elif obj == 'adp':
+            metric = area * cycle
+        elif obj == 'latency':
+            metric = cycle
+        elif obj == 'energy':
+            metric = energy
+
+        if metric > 0: 
+            if min_metric: 
+                if metric < min_metric:
                     print(config_str)
-                    min_cycle_energy = edp
+                    min_metric = metric
             else:
-                min_cycle_energy = edp
-            print(f'edp: {edp}')
-            print(f'min_cycle_energy: {min_cycle_energy}')
+                min_metric = metric
+            print(f'{obj}: {metric}')
+            print(f'min_{obj}: {min_metric}')
 
             # data_entry = [str(cycle), str(energy)] + [str(area), str(edp), str(adp)]  + data_entry
             data_entry = [str(cycle), str(energy)] + data_entry
             data.append((config_str, data_entry))
-    return data, min_cycle_energy
+    return data, min_metric
 
 
-def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
+def gen_dataset(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50', arch_v3=False, mem_levels=5, model_cycles=False, postfix='', obj='edp'):
     config_str = glob_str.replace('_*.yaml', '')
     dataset_path = output_dir / f'dataset{postfix}.csv'
     print(dataset_path)
 
-    data, min_cycle_energy = fetch_arch_perf_data_func(new_arch_dir, output_dir, model=model, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles)
+    data, min_metric = fetch_arch_perf_data_func(new_arch_dir, output_dir, model=model, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles, obj=obj)
     gen_dataset_csv(data, dataset_path)
-    return min_cycle_energy
+    return min_metric
 
 
 def gen_dataset_per_layer(output_dir='/scratch/qijing.huang/cosa_ucb-bar/src/output_dir', arch_v3=False, mem_levels=5, model_cycles=False, postfix=''):
@@ -563,8 +571,8 @@ if __name__ == "__main__":
     # gen_data(arch_dir, output_dir)
     # gen_dataset(arch_dir, output_dir, arch_v3=True, postfix='_v3')
     # fetch_data(new_arch_dir, output_dir)
-    # gen_dataset_per_layer()
+    gen_dataset_per_layer()
     # gen_dataset_per_network()
     #gen_dataset_all()
-    gen_dataset_all_layer()
+    #gen_dataset_all_layer()
 
