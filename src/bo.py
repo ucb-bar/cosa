@@ -75,7 +75,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, c
     gen_data(arch_dir, output_dir, glob_str, model=model)
     cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model)
     data = fetch_arch_perf_data(arch_dir, output_dir, glob_str, arch_v3, mem_levels=5, model=model)
-    if data[0] != -1:
+    if cycle > 0:
         append_dataset_csv(data, dataset_path)
     return (cycle, energy, area)
 
@@ -160,19 +160,12 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
 
 def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1):
     assert(num_samples > init_samples)
+    random.seed(random_seed)
 
     dataset_path = output_dir / f'dataset_{model}_random_s{random_seed}.csv'
     with open(dataset_path,  'w') as f:
         key = gen_dataset_col_title()
         f.write(f'{key}\n')
-
-    pbounds = {}
-    bounds = [64, 32, 256, 256, 4096, 256]
-    # scales = [1, 128, 1, 2**8, 1, 2**10]
-    scales = [1, 1, 1, 2**8, 1, 2**10]
-    
-    for i, bound in enumerate(bounds):
-        pbounds[i] = (1, bound)
 
     bounds = [64, 32, 256, 256, 4096, 256]
     scales = [1, 1, 1, 2**8, 1, 2**10]
