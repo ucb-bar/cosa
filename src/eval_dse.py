@@ -163,13 +163,20 @@ def get_best_entry(data, metric_idx=[1,2]):
     return best_perf, best_entry
 
 
-def parse_best_results(dataset_path, n_entries=None):
+def parse_best_results(dataset_path, n_entries=None, obj='edp'):
     data = utils.parse_csv(dataset_path)
     if n_entries is None:
         data = data[1:]
     else:
         data = data[1: n_entries+1]
-    best_metric, best_entry = get_best_entry(data) 
+    if obj == 'edp':
+       metric_idx = [1,2] 
+    elif obj == 'latency':
+       metric_idx = [1] 
+    elif obj == 'energy':
+        metric_idx = [2] 
+
+    best_metric, best_entry = get_best_entry(data, metric_idx=metric_idx) 
     print(f'dataset_path: {dataset_path}') 
     print(f'best_entry: {best_entry}') 
     print(f'best_metric: {best_metric}') 
