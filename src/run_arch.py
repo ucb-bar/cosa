@@ -437,6 +437,114 @@ def gen_dataset_all_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_data
                 f.write(f'{new_data_str}\n')
 
 
+# find layer with max diff
+def gen_dataset_max_diff(per_layer_dataset_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db', output_dir='/scratch/qijing.huang/cosa_dataset/db/'):
+    per_layer_dataset_dir = pathlib.Path(per_layer_dataset_dir).resolve()
+    output_dir = pathlib.Path(output_dir).resolve()
+    per_layer_dataset_files = per_layer_dataset_dir.glob('dataset_*.csv')
+    
+    per_layer_dataset_files = list(per_layer_dataset_files)
+    first_layer_dataset_file = per_layer_dataset_files[0]
+    per_arch_data = utils.parse_csv(first_layer_dataset_file)
+    
+    diffs = []
+    variances = [] 
+    per_layer_dataset_files = per_layer_dataset_files[12:13]
+    for per_layer_dataset_file in per_layer_dataset_files:
+    # for arch_idx, arch_data in enumerate(per_arch_data):
+        # layer_line = utils.parse_csv_line(per_layer_dataset_file, arch_idx+1)
+        # new_data = layer_line + layer_config
+        # new_data_str = ','.join(new_data) 
+        min_perf, _ = parse_best_results(per_layer_dataset_file, n_entries=None, obj='edp', func='min')
+        max_perf, _ = parse_best_results(per_layer_dataset_file, n_entries=None, obj='edp', func='max')
+        var_perf, _ = parse_best_results(per_layer_dataset_file, n_entries=None, obj='edp', func='var')
+        print(f'min: {min_perf}, max: {max_perf}, var: {var_perf}')
+        diff = (max_perf - min_perf) / min_perf
+        diffs.append(diff)
+        variances.append(var_perf)
+
+    import numpy as np
+    diffs_np = np.array(diffs)
+    vars_np = np.array(variances)
+    
+    max_diff = np.max(diffs_np)
+    max_diff_idx = np.argmax(diffs_np)
+    file_name = per_layer_dataset_files[max_diff_idx]
+    print(f'max_diff {max_diff}, max_diff_idx {max_diff_idx}, file {file_name}')
+
+    max_var = np.max(vars_np)
+    max_var_idx = np.argmax(vars_np)
+    file_name = per_layer_dataset_files[max_var_idx]
+    print(f'max_var {max_var}, max_var_idx {max_var_idx}, file {file_name}')
+
+    
+
+
+
+def get_best_entry(data, metric_idx=[1,2], func='min'):
+    import numpy as np
+    best_perf = None
+    best_entry = None
+    data_arr = []
+    for line, per_arch_data in enumerate(data): 
+        perf_prod = 1.0
+        for entry in metric_idx:
+            perf_prod *= float(per_arch_data[entry])
+        data_arr.append(perf_prod)
+   
+    data_np = np.array(data_arr)
+    if func == 'min':
+        print(data_np)
+        best_perf = np.min(data_np)
+        best_entry_idx = np.argmin(data_np) 
+        best_entry = data[best_entry_idx] 
+    elif func == 'max':
+        best_perf = np.max(data_np)
+        best_entry_idx = np.argmax(data_np) 
+        best_entry = data[best_entry_idx] 
+    elif func == 'mean':
+        best_perf = np.mean(data_np)
+        best_entry = None
+    elif func == 'var':
+        best_perf = np.var(data_np)
+        best_entry = None 
+    else:
+        raise ValueError("Func not valid.")
+    #     if line == 0:
+    #         best_perf = perf_prod
+    #         best_entry = per_arch_data
+    #     if metric == 'min':
+    #         if perf_prod < best_perf:
+    #             best_perf = perf_prod
+    #             best_entry = per_arch_data
+    #     elif metric == 'max':
+    #         if perf_prod > best_perf:
+    #             best_perf = perf_prod
+    #             best_entry = per_arch_data
+
+    return best_perf, best_entry
+
+
+def parse_best_results(dataset_path, n_entries=None, obj='edp', func='min'):
+    data = utils.parse_csv(dataset_path)
+    if n_entries is None:
+        data = data[1:]
+    else:
+        data = data[1: n_entries+1]
+    if obj == 'edp':
+       metric_idx = [1,2] 
+    elif obj == 'latency':
+       metric_idx = [1] 
+    elif obj == 'energy':
+        metric_idx = [2] 
+
+    best_metric, best_entry = get_best_entry(data, metric_idx=metric_idx, func=func) 
+    print(f'dataset_path: {dataset_path}') 
+    print(f'best_entry: {best_entry}') 
+    print(f'best_metric: {best_metric}') 
+    return best_metric, best_entry
+
+
 def gen_dataset_all(per_network_dataset_dir='/scratch/qijing.huang/cosa_ucb-bar/src/output_dir', unique_sum=True):
     model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench']
     
@@ -571,8 +679,9 @@ if __name__ == "__main__":
     # gen_data(arch_dir, output_dir)
     # gen_dataset(arch_dir, output_dir, arch_v3=True, postfix='_v3')
     # fetch_data(new_arch_dir, output_dir)
-    gen_dataset_per_layer()
+    # gen_dataset_per_layer()
     # gen_dataset_per_network()
-    #gen_dataset_all()
-    #gen_dataset_all_layer()
+    # gen_dataset_all()
+    # gen_dataset_all_layer()
+    gen_dataset_max_diff()
 
