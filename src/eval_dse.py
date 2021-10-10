@@ -49,7 +49,6 @@ def construct_argparser():
                         help='Postfix for search algo for different seeds',
                         default='',
                         )
-
     parser.add_argument('-bap',
                         '--base_arch_path',
                         type=str,
@@ -61,6 +60,12 @@ def construct_argparser():
                         type=str,
                         help='Target DNN Model',
                         default='resnet50',
+                        )
+    parser.add_argument(
+                        '--layer_idx',
+                        type=str,
+                        help='Target DNN Layer',
+                        default='',
                         )
 
     return parser
@@ -126,7 +131,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch
     return (cycle, energy, area)
 
     
-def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50', obj='edp'):
+def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50', obj='edp', layer_idx=None):
     search_algos = ['random_search', 'optimal_search']
     #search_algos = ['optimal_search']
     opt_algos = ['Newton', 'sgd']
@@ -141,7 +146,7 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search
                 gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=False)
 
             gen_data(arch_dir, output_dir, glob_str, model=model)
-            best_perf = gen_dataset(arch_dir, output_dir, glob_str=glob_str, model=model, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}', obj=obj)
+            best_perf = gen_dataset(arch_dir, output_dir, glob_str=glob_str, model=model, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}', obj=obj, layer_idx=layer_idx)
             best_perfs.append(best_perf)
     print("Optimal Design Points")
     print(best_perfs)
@@ -194,8 +199,13 @@ if __name__ == "__main__":
 
     output_dir.mkdir(parents=True, exist_ok=True)
     model = args.model
+
+    if arg.layer_idx:
+        layer_idx = int(arg.layer_idx)
+    else:
+        layer_idx = None
     
-    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model, obj=args.obj)
+    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model, obj=args.obj, layer_idx=layer_idx)
     
     # parse_best_results('dse_output_dir_dataset_500/dataset_optimal_search_Newton.csv', 10)
     #parse_search_results()
