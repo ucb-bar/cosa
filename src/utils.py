@@ -219,6 +219,7 @@ def parse_yaml(yaml_path):
         data = yaml.full_load(f)
     return data
 
+
 def parse_csv(csv_path):
     data = []
     with open(csv_path, 'r') as f:
@@ -228,6 +229,7 @@ def parse_csv(csv_path):
             line_arr = line.split(',') 
             data.append(line_arr)
     return data 
+
 
 def parse_csv_line(csv_path, line_idx):
     with open(csv_path, 'r') as f:

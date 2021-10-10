@@ -6,6 +6,7 @@ import itertools
 import os
 import subprocess
 import re
+import shutil
 
 import utils
 from cosa_input_objs import Arch, Prob
@@ -437,6 +438,42 @@ def gen_dataset_all_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_data
                 f.write(f'{new_data_str}\n')
 
 
+def merge_dataset_per_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db/grid', output_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db/all'):
+    per_layer_dataset_dir = pathlib.Path(per_layer_dataset_dir).resolve()
+    output_dir = pathlib.Path(output_dir).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    per_layer_dataset_files = per_layer_dataset_dir.glob('dataset_*.csv')
+    per_layer_dataset_files = list(per_layer_dataset_files)
+    # first_layer_dataset_file = per_layer_dataset_files[0]
+    # per_arch_data = utils.parse_csv(first_layer_dataset_file)
+    
+    seeds = [6,7,888,9999,987654321,123456]
+    target_dir = '/scratch/qijing.huang/cosa_dataset/db/layer_db' 
+    target_dir = pathlib.Path(target_dir)
+    print(len(per_layer_dataset_files))
+    # per_layer_dataset_files = per_layer_dataset_files[12:13]
+    for per_layer_dataset_file in per_layer_dataset_files:
+        per_layer_dataset_file = pathlib.Path(per_layer_dataset_file)
+        dataset_path = output_dir / per_layer_dataset_file.name 
+        # with open(target_dataset_path, 'r') as f:
+        #     data = f.readlines()
+
+        # with open(dataset_path,  'w') as f:
+        #     f.write(f'{key}\n')
+        shutil.copyfile(per_layer_dataset_file, dataset_path)
+        for seed in seeds:
+            target_dataset_path = target_dir / f'random_s{seed}' / per_layer_dataset_file.name  
+            if target_dataset_path.is_file():
+                print(target_dataset_path)
+                with open(target_dataset_path, 'r') as f:
+                    data = f.readlines()
+                    with open(dataset_path,  'a') as f:
+                        for d in data[1:]:
+                            f.write(d)
+
+
+
 # find layer with max diff
 def gen_dataset_max_diff(per_layer_dataset_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db', output_dir='/scratch/qijing.huang/cosa_dataset/db/'):
     per_layer_dataset_dir = pathlib.Path(per_layer_dataset_dir).resolve()
@@ -664,7 +701,6 @@ def fetch_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml'):
 
         if len(db) % 100 == 0:
             print(f"Fetched data for {len(db)} arch")
-    
     utils.store_json(output_dir / "all_arch.json", db)
     
 
@@ -683,5 +719,5 @@ if __name__ == "__main__":
     # gen_dataset_per_network()
     # gen_dataset_all()
     # gen_dataset_all_layer()
-    gen_dataset_max_diff()
-
+    # gen_dataset_max_diff()
+    merge_dataset_per_layer()
