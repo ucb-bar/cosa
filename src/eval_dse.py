@@ -152,42 +152,6 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search
     print(best_perfs)
 
 
-def get_best_entry(data, metric_idx=[1,2]):
-    best_perf = None
-    best_entry = None
-    for line, per_arch_data in enumerate(data): 
-        perf_prod = 1.0
-        for entry in metric_idx:
-            perf_prod *= float(per_arch_data[entry])
-        if line == 0:
-            best_perf = perf_prod
-            best_entry = per_arch_data
-        if perf_prod < best_perf:
-            best_perf = perf_prod
-            best_entry = per_arch_data
-    return best_perf, best_entry
-
-
-def parse_best_results(dataset_path, n_entries=None, obj='edp'):
-    data = utils.parse_csv(dataset_path)
-    if n_entries is None:
-        data = data[1:]
-    else:
-        data = data[1: n_entries+1]
-    if obj == 'edp':
-       metric_idx = [1,2] 
-    elif obj == 'latency':
-       metric_idx = [1] 
-    elif obj == 'energy':
-        metric_idx = [2] 
-
-    best_metric, best_entry = get_best_entry(data, metric_idx=metric_idx) 
-    print(f'dataset_path: {dataset_path}') 
-    print(f'best_entry: {best_entry}') 
-    print(f'best_metric: {best_metric}') 
-    return best_metric, best_entry
-
-
 if __name__ == "__main__":
     parser = construct_argparser()
     args = parser.parse_args()
@@ -207,7 +171,6 @@ if __name__ == "__main__":
     
     gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model, obj=args.obj, layer_idx=layer_idx)
     
-    # parse_best_results('dse_output_dir_dataset_500/dataset_optimal_search_Newton.csv', 10)
     #parse_search_results()
     
     # mesh x [3, 4, 5, 8, 10, 12, 14] 
