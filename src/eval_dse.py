@@ -164,8 +164,8 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
     model = args.model
 
-    if arg.layer_idx:
-        layer_idx = int(arg.layer_idx)
+    if args.layer_idx:
+        layer_idx = int(args.layer_idx)
     else:
         layer_idx = None
     
