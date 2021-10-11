@@ -47,13 +47,24 @@ def construct_argparser():
                         type=str,
                         help='DNN Model',
                         )
+    parser.add_argument(
+                        '--layer_idx',
+                        type=str,
+                        help='Target DNN Layer',
+                        default='',
+                        )
+
     return parser
 
 
-def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model):
+def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model, layer_idx):
     cycle_result_path = pathlib.Path(output_dir) / f'results_{arch_path.stem}_cycle.json'
     if cycle_result_path.exists():
         return
+
+    print(f"model: {model}")
+    print(f"layer_idx: {layer_idx}")
+    print(f"results_path: {cycle_result_path}")
 
     if model is not None:
         model_strs = [model]
@@ -71,8 +82,12 @@ def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model):
         layers = utils.parse_yaml(layer_def_path)
 
         # Schedule each layer
-        for layer_idx, layer in enumerate(layers):
+        for idx, layer in enumerate(layers):
+            if layer_idx is not None:
+                if int(layer_idx) != int(idx):
+                    continue
             prob_path = model_dir / (layer + '.yaml')
+            print(prob_path)
             status_dict = run_timeloop(prob_path, arch_path, mapspace_path, output_dir)
             status_dict_key = next(iter(status_dict))
 
@@ -101,4 +116,9 @@ if __name__ == "__main__":
     output_dir = args.output_dir
     model = args.model
 
-    run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model)
+    if args.layer_idx:
+        layer_idx = args.layer_idx
+    else:
+        layer_idx = None
+
+    run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model, layer_idx)

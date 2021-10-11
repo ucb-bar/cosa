@@ -220,6 +220,7 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
     print(f'path: {cycle_path}') 
 
     if layer_idx is not None: 
+        layer_idx = int(layer_idx)
         workload_dir = pathlib.Path(workload_dir).resolve()
         model_dir = workload_dir / (model+'_graph')
         layer_def_path = model_dir / 'unique_layers.yaml'
@@ -614,7 +615,7 @@ def gen_dataset_all(per_network_dataset_dir='/scratch/qijing.huang/cosa_ucb-bar/
     print(f'gen: {dataset_path}')
 
 
-def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50'):
+def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50', layer_idx=None):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
@@ -629,6 +630,8 @@ def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resne
         cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file]
         if model:
             cmd += ["--model", model]
+        if layer_idx is not None:
+            cmd += ["--layer_idx", layer_idx]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
