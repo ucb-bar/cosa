@@ -53,11 +53,49 @@ def construct_argparser():
                         help='Target DNN Layer',
                         default='',
                         )
+    parser.add_argument('-dnn',
+                        '--dnn_def_path',
+                        type=str,
+                        help='DNN Def Path',
+                        default=None,
+                        )
 
     return parser
 
 
-def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model, layer_idx):
+def gen_prob(workload_dir, model, dnn_def_path):
+    model_dir = workload_dir / (model + '_graph')
+    model_dir.mkdir(parents=True, exist_ok=True)
+    
+    layer_defs = utils.parse_json(dnn_def_path)
+
+    files = []
+    
+    for layer_idx, layer_def in enumerate(layer_defs):
+        prob = {}
+        prob['problem']={'R':layer_def[0], 
+                         'S':layer_def[1],
+                         'P':layer_def[2],
+                         'Q':layer_def[3],
+                         'C':layer_def[4],
+                         'K':layer_def[5],
+                         'N':layer_def[6],
+                         'Wstride':layer_def[7],
+                         'Hstride':layer_def[8],
+                         'Wdilation': 1,
+                         'Hdilation': 1,
+                         }
+        file_name = f'layer_{layer_idx}'
+        prob_path = model_dir / f'{file_name}.yaml' 
+        utils.store_yaml(prob_path, prob)
+        files.append(file_name)
+    layer_def_path = model_dir / 'unique_layers.yaml'
+    utils.store_yaml(layer_def_path, files)
+    print(layer_def_path)
+    
+
+def run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model, layer_idx, dnn_def_path=None):
+    
     cycle_result_path = pathlib.Path(output_dir) / f'results_{arch_path.stem}_cycle.json'
     if cycle_result_path.exists():
         return
@@ -120,5 +158,9 @@ if __name__ == "__main__":
         layer_idx = args.layer_idx
     else:
         layer_idx = None
+    
+    if args.dnn_def_path is not None:
+        assert('new' in model)
+        gen_prob(workload_dir, args.model, args.dnn_def_path)
 
-    run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model, layer_idx)
+    run_dnn_models(workload_dir, arch_path, mapspace_path, output_dir, model, layer_idx, dnn_def_path=args.dnn_def_path)

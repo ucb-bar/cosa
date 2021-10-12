@@ -67,6 +67,12 @@ def construct_argparser():
                         help='Target DNN Layer',
                         default='',
                         )
+    parser.add_argument('-dnn',
+                        '--dnn_def_path',
+                        type=str,
+                        help='DNN Def Path',
+                        default=None,
+                        )
 
     return parser
 
@@ -131,8 +137,11 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch
     return (cycle, energy, area)
 
     
-def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50', obj='edp', layer_idx=None):
-    search_algos = ['random_search', 'optimal_search']
+def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix='', model='resnet50', obj='edp', layer_idx=None, dnn_def_path=None):
+    if dnn_def_path:
+        search_algos = ['dnn_search']
+    else:
+        search_algos = ['random_search', 'optimal_search']
     #search_algos = ['optimal_search']
     opt_algos = ['Newton', 'sgd']
     #opt_algos = ['Newton']
@@ -169,7 +178,11 @@ if __name__ == "__main__":
     else:
         layer_idx = None
     
-    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model, obj=args.obj, layer_idx=layer_idx)
+    if args.dnn_def_path is not None:
+        assert('new' in model)
+        assert(layer_idx is None)
+    gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search_algo_postfix=args.search_algo_postfix, model=model, obj=args.obj, layer_idx=layer_idx, dnn_def_path=args.dnn_def_path)
+    
     
     #parse_search_results()
     

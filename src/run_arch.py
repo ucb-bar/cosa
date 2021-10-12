@@ -236,10 +236,15 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
             area = utils.parse_json(area_path)[model][prob_key]
     else: 
         if unique_sum: 
-            unique_layers = {'alexnet': 8, 'resnet50':24, 'resnext50_32x4d':25, 'deepbench':9}
+            workload_dir = pathlib.Path(workload_dir)
+            model_dir = workload_dir / (model + '_graph')
+            layer_def_path = model_dir / 'unique_layers.yaml'
+            layers = utils.parse_yaml(layer_def_path)
+            num_unique_layers = len(layers)
+
             try:
                 num_layers = len(utils.parse_json(cycle_path)[model].values())
-                if num_layers != unique_layers[model]:
+                if num_layers != num_unique_layers:
                     return -1, -1, -1
                 
                 cycle = sum(utils.parse_json(cycle_path)[model].values())
@@ -320,9 +325,9 @@ def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.ya
         # Get the labels 
         cycle, energy, area = parse_results(output_dir, config_str, unique_sum=unique_sum, model=model, layer_idx=layer_idx, workload_dir=workload_dir)
         metric = 0
-        if obj == 'edp':
+        if obj == 'edp' and cycle > 1 and energy > 1:
             metric = cycle * energy
-        elif obj == 'adp':
+        elif obj == 'adp' and area > 1 and cycle > 1:
             metric = area * cycle
         elif obj == 'latency':
             metric = cycle
@@ -413,7 +418,7 @@ def gen_dataset_per_network(output_dir='/scratch/qijing.huang/cosa_ucb-bar/src/o
             raise
 
 
-def gen_dataset_all_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db', output_dir='/scratch/qijing.huang/cosa_dataset/db/'):
+def gen_dataset_all_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_dataset/db/layer_db/all', output_dir='/scratch/qijing.huang/cosa_dataset/db/all_layers_db'):
     per_layer_dataset_dir = pathlib.Path(per_layer_dataset_dir).resolve()
     output_dir = pathlib.Path(output_dir).resolve()
     per_layer_dataset_files = per_layer_dataset_dir.glob('dataset_*.csv')
@@ -450,9 +455,12 @@ def merge_dataset_per_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_da
     # per_arch_data = utils.parse_csv(first_layer_dataset_file)
     
     seeds = [6,7,888,9999,987654321,123456]
-    target_dir = '/scratch/qijing.huang/cosa_dataset/db/layer_db' 
+    # target_dir = '/scratch/qijing.huang/cosa_dataset/db/layer_db' 
+    target_dir = '/nscratch/qijing.huang/cosa/layer_db' 
     target_dir = pathlib.Path(target_dir)
+    per_layer_target_dirs = list(target_dir.glob('*'))
     print(len(per_layer_dataset_files))
+    print(len(per_layer_target_dirs))
     # per_layer_dataset_files = per_layer_dataset_files[12:13]
     for per_layer_dataset_file in per_layer_dataset_files:
         per_layer_dataset_file = pathlib.Path(per_layer_dataset_file)
@@ -463,8 +471,11 @@ def merge_dataset_per_layer(per_layer_dataset_dir='/scratch/qijing.huang/cosa_da
         # with open(dataset_path,  'w') as f:
         #     f.write(f'{key}\n')
         shutil.copyfile(per_layer_dataset_file, dataset_path)
-        for seed in seeds:
-            target_dataset_path = target_dir / f'random_s{seed}' / per_layer_dataset_file.name  
+        # for seed in seeds:
+        print(dataset_path)
+        for per_layer_target_dir in per_layer_target_dirs: 
+            # target_dataset_path = target_dir / f'random_s{seed}' / per_layer_dataset_file.name  
+            target_dataset_path = per_layer_target_dir / per_layer_dataset_file.name  
             if target_dataset_path.is_file():
                 print(target_dataset_path)
                 with open(target_dataset_path, 'r') as f:
@@ -615,7 +626,7 @@ def gen_dataset_all(per_network_dataset_dir='/scratch/qijing.huang/cosa_ucb-bar/
     print(f'gen: {dataset_path}')
 
 
-def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50', layer_idx=None):
+def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resnet50', layer_idx=None, dnn_def_path=None):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
@@ -721,6 +732,6 @@ if __name__ == "__main__":
     # gen_dataset_per_layer()
     # gen_dataset_per_network()
     # gen_dataset_all()
-    # gen_dataset_all_layer()
+    gen_dataset_all_layer()
     # gen_dataset_max_diff()
-    merge_dataset_per_layer()
+    # merge_dataset_per_layer()
