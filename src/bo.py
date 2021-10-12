@@ -27,6 +27,12 @@ def construct_argparser():
 
     parser.add_argument('--obj', default='edp', help='valid options [edp, latency, energy]')
     parser.add_argument('--search_algo', default='bo', help='valid options [bo, random]')
+    parser.add_argument(
+                        '--layer_idx',
+                        type=str,
+                        help='Target DNN Layer',
+                        default='',
+                        )
     parser.add_argument('-o',
                         '--output_dir',
                         type=str,
@@ -67,21 +73,22 @@ def construct_argparser():
     return parser
 
 
-def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads'):
+def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads', layer_idx=None):
     hw_config = discretize_config(hw_config)
     config_yaml_str = gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=arch_v3)
     glob_str = config_yaml_str
     config_str = config_yaml_str.replace('.yaml', '')
-    gen_data(arch_dir, output_dir, glob_str, model=model)
-    cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model)
+    gen_data(arch_dir, output_dir, glob_str, model=model, layer_idx=layer_idx)
+    cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model, layer_idx=layer_idx)
+    print(cycle, energy, area)
     assert(cycle > 0 and energy > 0)
-    data = fetch_arch_perf_data(arch_dir, output_dir, glob_str, arch_v3, mem_levels=5, model=model)
+    data = fetch_arch_perf_data(arch_dir, output_dir, glob_str, arch_v3, mem_levels=5, model=model, layer_idx=layer_idx)
     if cycle > 0:
         append_dataset_csv(data, dataset_path)
     return (cycle, energy, area)
 
 
-def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, obj='edp'):
+def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, obj='edp', layer_idx=None):
     assert(num_samples > init_samples)
 
     dataset_path = output_dir / f'dataset_{model}_s{random_seed}.csv'
@@ -121,13 +128,15 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
         for i in range(len(bounds)):
             hw_config.append(next_point_to_probe[i] * scales[i])
 
-        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model)
+        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx)
         if obj == 'edp':
             target = cycle * energy / target_scale 
         elif obj == 'latency':
             target = cycle
         elif obj == 'energy':
             target = energy
+        else:
+            raise
 
         init_data.append((next_point_to_probe, target))
 
@@ -147,10 +156,16 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
         for i in range(len(bounds)):
             hw_config.append(next_point_to_probe[i] * scales[i])
 
-        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model)
+        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx)
+        if obj == 'edp':
+            target = cycle * energy / target_scale 
+        elif obj == 'latency':
+            target = cycle
+        elif obj == 'energy':
+            target = energy
+        else:
+            raise
 
-        target = cycle * energy / target_scale
-        
         print("Next point to probe is:", next_point_to_probe)
         print("Target:", target)
         optimizer.register(
@@ -239,6 +254,11 @@ if __name__ == "__main__":
     arch_dir = f'{arch_dir}_{model}_s{random_seed}' 
     arch_dir = pathlib.Path(arch_dir).resolve()
 
+    if args.layer_idx:
+        layer_idx = args.layer_idx
+    else:
+        layer_idx = None
+
     # mesh x [3, 4, 5, 8, 10, 12, 14] 
     # 4,256,256,1,128,256,128,16384,64,4096,1,32768
     #hw_config = [4,256,256,256,16384,4096,32768]
@@ -247,6 +267,6 @@ if __name__ == "__main__":
     # print(eval_result[0] * eval_result[1])
     num_samples = args.num_samples
     if args.search_algo == 'bo':
-        bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
+        bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj, layer_idx=layer_idx)
     elif args.search_algo == 'random':
         random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
