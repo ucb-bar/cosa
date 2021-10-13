@@ -579,6 +579,7 @@ def parse_best_results(dataset_path, n_entries=None, obj='edp', func='min'):
     if n_entries is None:
         data = data[1:]
     else:
+        n_entries = int(n_entries)
         data = data[1: n_entries+1]
     if obj == 'edp':
        metric_idx = [1,2] 
