@@ -179,7 +179,8 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
         )
         print(f'it: {iteration}, {target}, {next_point_to_probe}')
 
-def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, layer_idx=None, dnn_def_path=None):
+
+def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, obj='edp', layer_idx=None, dnn_def_path=None):
     assert(num_samples > init_samples)
     random.seed(random_seed)
 
