@@ -6,14 +6,15 @@ import pathlib
 import time
 
 import numpy as np
+
+logger = logging.getLogger()
+logger.setLevel(logging.CRITICAL)  # capture everything
+logger.disabled = True
+
 import run_config
 from cosa_constants import _A, _B
 from cosa_input_objs import Prob, Arch, Mapspace
 from gurobipy import *
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  # capture everything
-logger.disabled = True
 
 _COSA_DIR = os.environ['COSA_DIR']
 
@@ -90,14 +91,21 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
                 Z_var.append(rank_arr)
             Z.append(Z_var)
 
-    factor_config, spatial_config, outer_perm_config, run_time = mip_solver(prime_factors, strides, arch, part_ratios,
+    with gurobipy.Env(empty=True) as env:
+        env.setParam('OutputFlag', 0)
+        env.setParam('LogToConsole', 0)
+        env.start()
+        with gurobipy.Model(env=env) as m:
+            m.Params.LogToConsole = 0
+            m.Params.OutputFlag = 0
+            factor_config, spatial_config, outer_perm_config, run_time = mip_solver(m, prime_factors, strides, arch, part_ratios,
                                                                             global_buf_idx=4, A=_A, Z=Z,
                                                                             compute_factor=10, util_factor=-0.1,
                                                                             traffic_factor=1)
     return factor_config, spatial_config, outer_perm_config, run_time
 
 
-def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_factor=10, util_factor=-1,
+def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_factor=10, util_factor=-1,
                traffic_factor=1):
     """CoSA mixed integer programming(MIP) formulation."""
 
@@ -106,7 +114,8 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
     num_vars = len(A[0])
     num_mems = len(Z[0])
 
-    m = Model("mip")
+    # m = Model("mip")
+
     cost = []
     constraints = []
 
@@ -393,6 +402,9 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
 
     m.ModelSense = GRB.MINIMIZE
     m.setObjective(cosa_obj, GRB.MINIMIZE) 
+    m.setParam('OutputFlag', 0)
+    m.setParam('LogToConsole', 0)
+
     m.setParam('TimeLimit', 60)
 
     # optimize for the objective function
@@ -403,7 +415,7 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
     milp_runtime = end_time - begin_time
 
     # output all constraints and variables
-    m.write("debug.lp")
+    # m.write("debug.lp")
 
     result_dict = {}
     for variable in m.getVars():
