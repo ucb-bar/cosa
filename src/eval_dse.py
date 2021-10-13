@@ -126,7 +126,7 @@ def discretize_config(hw_config):
     return hw_config
 
 
-def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads', model='resnet50', layer_idx=None):
+def eval(hw_config, base_arch_path, arch_dir, output_dir, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads', model='resnet50', layer_idx=None, dnn_def_path=None):
     hw_config = discretize_config(hw_config)
     config_yaml_str = gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=arch_v3)
     # glob_str = f'arch_{config_prefix}*.yaml'
@@ -154,7 +154,7 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search
                 config_prefix = f'{search_algo}_{opt_algo}_'
                 gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=False)
 
-            gen_data(arch_dir, output_dir, glob_str, model=model)
+            gen_data(arch_dir, output_dir, glob_str, model=model, layer_idx=layer_idx, dnn_def_path=dnn_def_path)
             best_perf = gen_dataset(arch_dir, output_dir, glob_str=glob_str, model=model, arch_v3=False, mem_levels=5, model_cycles=False, postfix=f'_{search_algo}_{opt_algo}', obj=obj, layer_idx=layer_idx)
             best_perfs.append(best_perf)
     print("Optimal Design Points")

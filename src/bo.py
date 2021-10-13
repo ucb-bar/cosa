@@ -69,16 +69,21 @@ def construct_argparser():
                         help='Target DNN Model',
                         default='resnet50',
                         )
-
+    parser.add_argument('-dnn',
+                        '--dnn_def_path',
+                        type=str,
+                        help='DNN Def Path',
+                        default=None,
+                        )
     return parser
 
 
-def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads', layer_idx=None):
+def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, config_prefix='', arch_v3=False, unique_sum=True, workload_dir='../configs/workloads', layer_idx=None, dnn_def_path=None):
     hw_config = discretize_config(hw_config)
     config_yaml_str = gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_config, config_prefix, arch_v3=arch_v3)
     glob_str = config_yaml_str
     config_str = config_yaml_str.replace('.yaml', '')
-    gen_data(arch_dir, output_dir, glob_str, model=model, layer_idx=layer_idx)
+    gen_data(arch_dir, output_dir, glob_str, model=model, layer_idx=layer_idx, dnn_def_path=dnn_def_path)
     cycle, energy, area = parse_results(output_dir, config_str, unique_sum, model=model, layer_idx=layer_idx)
     print(cycle, energy, area)
     assert(cycle > 0 and energy > 0)
@@ -88,7 +93,7 @@ def eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, c
     return (cycle, energy, area)
 
 
-def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, obj='edp', layer_idx=None):
+def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, obj='edp', layer_idx=None, dnn_def_path=None):
     assert(num_samples > init_samples)
 
     dataset_path = output_dir / f'dataset_{model}_s{random_seed}.csv'
@@ -128,7 +133,7 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
         for i in range(len(bounds)):
             hw_config.append(next_point_to_probe[i] * scales[i])
 
-        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx)
+        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx, dnn_def_path=dnn_def_path)
         if obj == 'edp':
             target = cycle * energy / target_scale 
         elif obj == 'latency':
@@ -156,7 +161,7 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
         for i in range(len(bounds)):
             hw_config.append(next_point_to_probe[i] * scales[i])
 
-        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx)
+        cycle, energy, area = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx, dnn_def_path=dnn_def_path)
         if obj == 'edp':
             target = cycle * energy / target_scale 
         elif obj == 'latency':
@@ -174,7 +179,7 @@ def bo(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init
         )
         print(f'it: {iteration}, {target}, {next_point_to_probe}')
 
-def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1):
+def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resnet50', init_samples=0, random_seed=1, layer_idx=None, dnn_def_path=None):
     assert(num_samples > init_samples)
     random.seed(random_seed)
 
@@ -202,7 +207,7 @@ def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resn
         for i in range(len(bounds)):
             val = random.randint(1, bounds[i]) * scales[i]
             hw_config.append(val)
-        eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model)
+        eval_result = eval(hw_config, base_arch_path, arch_dir, output_dir, dataset_path, model, layer_idx=layer_idx, dnn_def_path=dnn_def_path)
         if eval_result[0] == -1:
             print("Invalid arch:", hw_config)
             continue
@@ -259,6 +264,10 @@ if __name__ == "__main__":
     else:
         layer_idx = None
 
+    if args.dnn_def_path is not None:
+        assert('new' in model)
+        assert(layer_idx is None)
+
     # mesh x [3, 4, 5, 8, 10, 12, 14] 
     # 4,256,256,1,128,256,128,16384,64,4096,1,32768
     #hw_config = [4,256,256,256,16384,4096,32768]
@@ -267,6 +276,6 @@ if __name__ == "__main__":
     # print(eval_result[0] * eval_result[1])
     num_samples = args.num_samples
     if args.search_algo == 'bo':
-        bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj, layer_idx=layer_idx)
+        bo(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj, layer_idx=layer_idx, dnn_def_path=args.dnn_def_path)
     elif args.search_algo == 'random':
-        random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj)
+        random_search(base_arch_path, arch_dir, output_dir, num_samples, random_seed=random_seed, model=model, obj=args.obj, layer_idx=layer_idx, dnn_def_path=args.dnn_def_path)

@@ -210,7 +210,7 @@ def append_dataset_csv(data, dataset_path):
             f.write(f'{key},{col_str}\n')
             
 
-def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', layer_idx=None, workload_dir='../configs/workloads', arch_v3=False):
+def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', layer_idx=None, workload_dir=f'{_COSA_DIR}/configs/workloads', arch_v3=False):
     # if network is None, return sum of 4 networks
     # if layer is None, reuturn sum of specific network
     cycle_path = output_dir / f'results_{config_str}_cycle.json'
@@ -274,12 +274,12 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
     return cycle, energy, area
 
 
-def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads', obj='edp'):
+def fetch_arch_perf_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir=f'{_COSA_DIR}/configs/workloads', obj='edp'):
     data, _ = fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str=glob_str, arch_v3=arch_v3, mem_levels=mem_levels, model_cycles=model_cycles, model=model, layer_idx=layer_idx, unique_sum=unique_sum, workload_dir=workload_dir, obj=obj)
     return data
 
 
-def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir='../configs/workloads', obj='edp'):
+def fetch_arch_perf_data_func(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', arch_v3=False, mem_levels=5, model_cycles=False, model='resnet50', layer_idx=None, unique_sum=True, workload_dir=f'{_COSA_DIR}/configs/workloads', obj='edp'):
     # Get all arch files
     arch_files = list(new_arch_dir.glob(glob_str))
     arch_files.sort()
@@ -643,6 +643,8 @@ def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resne
             cmd += ["--model", model]
         if layer_idx is not None:
             cmd += ["--layer_idx", layer_idx]
+        if dnn_def_path is not None:
+            cmd += ["--dnn_def_path", str(dnn_def_path)]
 
         process = subprocess.Popen(cmd)
         processes.append(process)
