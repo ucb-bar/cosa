@@ -143,7 +143,7 @@ def gen_results_dataset(base_arch_path, arch_dir, output_dir, config_dir, search
     else:
         search_algos = ['random_search', 'optimal_search']
     #search_algos = ['optimal_search']
-    opt_algos = ['Newton', 'sgd']
+    opt_algos = ['sgd', 'Newton']
     #opt_algos = ['Newton']
     best_perfs = []
     for search_algo in search_algos:
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     model = args.model
 
     if args.layer_idx:
-        layer_idx = int(args.layer_idx)
+        layer_idx = args.layer_idx
     else:
         layer_idx = None
     
