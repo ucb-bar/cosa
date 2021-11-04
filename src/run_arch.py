@@ -51,9 +51,43 @@ def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, config_prefi
     arith_meshX,arith_ins,mem1_ent,mem2_ent,mem3_ent,mem4_ent = hw_configs 
  
     if arch_v3: 
-        base_arch_dict = base_arch["architecture"]["subtree"][0]["subtree"][0]
+        arch_invalid = False
         new_arch_dict = new_arch["architecture"]["subtree"][0]["subtree"][0]
-        raise 
+        new_meshX = arith_meshX - 1
+        new_arch_dict["subtree"][0]["name"] = f"PE[0..{new_meshX}]" 
+
+        new_storage = new_arch_dict["subtree"][0]["local"]
+        new_arith = new_arch_dict["subtree"][0]["local"][4]["attributes"]
+        new_arith["meshX"] = arith_meshX
+
+        for i in range(3): # Ignoring DRAM
+            if "meshX" in new_storage[i]["attributes"]:
+                new_storage[i]["attributes"]["meshX"] = arith_meshX
+                # Check whether meshX divides num instances of all buffers
+                if new_storage[i]["attributes"]["instances"] % new_storage[i]["attributes"]["meshX"] != 0:
+                    print("Arch invalid")
+                    print("Instances:", new_storage[i]["attributes"]["instances"])
+                    print("meshX:", new_storage[i]["attributes"]["meshX"])
+                    arch_invalid = True
+
+            # if i != 0: # Ignoring registers
+        new_storage[0]["attributes"]["entries"] = mem3_ent 
+        new_storage[1]["attributes"]["entries"] = mem2_ent 
+        new_storage[2]["attributes"]["entries"] = mem1_ent 
+
+        # global buffer
+        new_gb_dict = new_arch_dict["local"][0]
+        new_gb_dict["attributes"]["entries"] = mem4_ent 
+            
+        if arch_invalid:
+            raise('Arch invalid!')
+
+        # MAC
+        new_arith["instances"] = int(arith_ins) * 128 
+        # Set registers to match MACs
+        new_storage[3]["attributes"]["instances"] = int(arith_ins) * 128  
+        new_storage[3]["attributes"]["meshX"] = arith_meshX
+
     else:
 	# Get nested dictionaries
         base_arith = base_arch["arch"]["arithmetic"]
@@ -76,7 +110,7 @@ def gen_arch_yaml_from_config(base_arch_path, arch_dir, hw_configs, config_prefi
     hw_configs_str = "_".join(hw_configs_arr)
 
     # Construct filename for new arch
-    config_str = get_hw_config_str(hw_configs, config_prefix)
+    config_str = get_hw_config_str(hw_configs, config_prefix, arch_v3)
 
     # Save new arch
     new_arch_path = new_arch_dir.resolve() / config_str
