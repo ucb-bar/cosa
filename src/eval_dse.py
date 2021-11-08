@@ -94,8 +94,12 @@ def parse_hw_configs(config_dir, search_algo, opt_algo, search_algo_postfix=""):
         config_str = config_str.replace('[','')
         confg_str_arr = config_str.split(' ')
         configs = [pow(2, math.ceil(math.log(float(confg_str_arr[0]))/math.log(2)))] + [round_config(float(i)) for i in confg_str_arr[1:]]
+        for idx, config in enumerate(configs):
+            if config > 0:
+                continue
+            configs[idx] = 1
         hw_configs.append(configs)
-    print(hw_configs)
+    print(f'hw_configs: {hw_configs}')
     return hw_configs
 
 
@@ -118,10 +122,13 @@ def discretize_config(hw_config):
     hw_config = hw_config[:]
     for idx in range(len(hw_config)):
         orig = hw_config[idx]
-        if idx == 0:
-            new = pow(2, math.ceil(math.log(orig)/math.log(2)))
+        if math.ceil(orig) <= 0:
+            new = 1
         else:
-            new = round_config(orig)
+            if idx == 0:
+                new = pow(2, math.ceil(math.log(orig)/math.log(2)))
+            else:
+                new = round_config(orig)
         hw_config[idx] = new
     return hw_config
 
