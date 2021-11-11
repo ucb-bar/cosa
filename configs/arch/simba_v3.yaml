@@ -8,11 +8,11 @@ architecture:
       class: DRAM
       attributes:
           #        width: 256
-          #        block-size: 32
+          #        block_size: 32
           #        word-bits: 8
         instances: 1
         word-bits: 8
-        block-size: 64
+        block_size: 64
         # bandwidth: 20.0
 
     subtree:
@@ -20,98 +20,74 @@ architecture:
       attributes:
         technology: 40nm
       local:
-          #  - name: GlobalBuffer
-          #    entries: 65536
-          #    instances: 1
-          #    word-bits: 8
-          #    block-size: 8
-          #    num-ports: 2
-          #    num-banks: 256
       - name: GlobalBuffer # 256KB buffer
         class: SRAM
         attributes:
-            # depth: 8192 # 65536 / 8
-            # width: 64 # 8 x8
-            # n_banks: 256
-            # word-bits: 8
-          entries: 65536
+          entries: 65536 
+          width: 64
+          depth: 1024
+          meshX: 1
           instances: 1
           word-bits: 8
-          block-size: 64
-          #bandwidth: 20.0
+          # block_size: 1  #width % (word_bits * block_size) == 0
+          n_rdwr_ports: 2
+          n_banks: 1
       subtree:
       - name: PE[0..15]
         local:
         - name: InputBuffer 
           class: SRAM
           attributes:
-              #            depth: 512 # 4096 / 8
-              #            width: 64 # 1 x 8 x 8
-              #            block-size: 8
-              #            word-bits: 8
-              #            n_banks: 1 
             entries: 4096 
+            width: 64
+            depth: 64
             instances: 16
             meshX: 16
             word-bits: 8
-            block-size: 8
-            num-ports: 2
-            num-banks: 1
-
+            n_rdwr_ports: 2
+            n_banks: 1
         - name: WeightBuffer 
           class: SRAM
           attributes:
-              #            depth: 16384
-              #            width: 64 # 8 x 8
-              #            block-size: 8
-              #            word-bits: 8
-              #            n_banks: 8 
             entries: 16384
+            width: 64
+            depth: 256 
             instances: 128
             meshX: 16
             word-bits: 8
-            block-size: 8
-            num-ports: 1
-            num-banks: 8
+            n_rdwr_ports: 2
+            n_banks: 1
         - name: AccumulationBuffer 
           class: SRAM
           attributes:
-              #            depth: 64
-              #            width: 192 # 8 x 24
-              #            instances: 128
-              #            # block-size: 32
-              #            word-bits: 24
-              #            block-size: 1
-              #            n_banks: 2 
             entries: 64
+            depth: 64
+            width: 24
             instances: 128
             meshX: 16
             word-bits: 24
             cluster-size: 8
             network-word-bits: 16
-            num-ports: 2
-            num-banks: 2
+            n_rdwr_ports: 2
+            n_banks: 1
         - name: Registers
-          class: regfile
+          class: SRAM
           attributes:
-              #            depth: 8
-              #            width: 512 # 64 x 8
-              #            block-size: 1
-              #            word-bits: 8
-              #            n_banks: 8
+            depth: 1
+            width: 8
             entries: 1
             instances: 1024
             meshX: 16
             word-bits: 8
             cluster-size: 64
-            num-ports: 2
-            num-banks: 8
+            n_rdwr_ports: 2
+            n_banks: 1
         - name: MACC
           class: intmac
           attributes:
             instances: 1024
             datawidth: 8
-            meshX : 16
+            meshX: 16
             word-bits: 8
 
 
