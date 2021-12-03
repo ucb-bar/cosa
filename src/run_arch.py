@@ -275,6 +275,7 @@ def parse_results(output_dir, config_str, unique_sum=True, model='resnet50', lay
             layer_def_path = model_dir / 'unique_layers.yaml'
             layers = utils.parse_yaml(layer_def_path)
             num_unique_layers = len(layers)
+            print(f'Target model dir {model_dir}, layer def path {layer_def_path}, num layers {num_unique_layers}')
 
             try:
                 num_layers = len(utils.parse_json(cycle_path)[model].values())
@@ -673,7 +674,7 @@ def gen_data(new_arch_dir, output_dir, glob_str='arch_pe*_v3.yaml', model='resne
     # Start schedule generation script for each layer on each arch
     for arch_file in arch_files:
 
-        cmd = ["python", "run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file]
+        cmd = ["python", f"{_COSA_DIR}/src/run_dnn_models.py", "--output_dir", str(output_dir), "--arch_path", arch_file]
         if model:
             cmd += ["--model", model]
         if layer_idx is not None:
