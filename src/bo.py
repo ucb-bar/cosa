@@ -218,7 +218,7 @@ def random_search(base_arch_path, arch_dir, output_dir, num_samples, model='resn
         edp = cycle * energy
 
         print("Arch evaluated:", hw_config)
-        print(f"Cycle: {cycle}, Energy: {energy}, EDP: {edp}")
+        print(f"Iter: {num_tested}, Cycle: {cycle}, Energy: {energy}, EDP: {edp}")
         success += 1
 
         if cycle < best_cycle:
