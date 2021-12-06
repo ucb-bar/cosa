@@ -251,19 +251,21 @@ if __name__ == "__main__":
     model = args.model
     random_seed = args.random_seed
 
+    if args.layer_idx:
+        layer_idx = args.layer_idx
+    else:
+        layer_idx = None
+
     output_dir = args.output_dir
     output_dir = f'{output_dir}_{model}_s{random_seed}' 
+    if layer_idx: 
+        output_dir += f'_layer{layer_idx}'
     output_dir = pathlib.Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     arch_dir = args.arch_dir
     arch_dir = f'{arch_dir}_{model}_s{random_seed}' 
     arch_dir = pathlib.Path(arch_dir).resolve()
-
-    if args.layer_idx:
-        layer_idx = args.layer_idx
-    else:
-        layer_idx = None
 
     if args.dnn_def_path is not None:
         assert('new' in model)
