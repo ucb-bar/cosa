@@ -61,5 +61,3 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
     """
 ```
 
-## Even and Uneven Mapping
-CoSA shall be able to support the even (using matrix B to encode bypassing scheme in [Timeloop](https://github.com/NVlabs/timeloop)) and uneven mapping (using matrix Z to encode rank to memory mapping for different data tensors as in [ZigZag](https://github.com/ZigZag-Project/zigzag)) 
