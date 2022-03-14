@@ -1,0 +1,23 @@
+
+DRAM [ Weights:262144 (262144) Inputs:65536 (65536) Outputs:65536 (65536) ] 
+---------------------------------------------------------------------------
+| for N in [0:1)
+
+Scratchpad [ Inputs:65536 (65536) Outputs:65536 (65536) ] 
+---------------------------------------------------------
+|   for K in [0:16)
+|     for C in [0:4)
+
+Accumulator [ ] 
+---------------
+|       for C in [0:8)
+|         for K in [0:4)
+|           for P in [0:32)
+|             for C in [0:16) (Spatial-Y)
+|               for K in [0:8) (Spatial-X)
+|                 for P in [0:2) (Spatial-X)
+
+Registers [ Weights:1 (1) ] 
+---------------------------
+|                   for P in [0:2)
+

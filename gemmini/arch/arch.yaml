@@ -1,0 +1,64 @@
+architecture:
+  version: 0.3
+
+  subtree:
+  - name: System
+    local:
+    - name: DRAM
+      class: DRAM
+      attributes:
+          #        width: 256
+          #        block_size: 32
+          #        word-bits: 8
+        instances: 1
+        word-bits: 8
+        block_size: 64
+        # bandwidth: 20.0
+
+    subtree:
+    - name: Chip
+      attributes:
+        technology: 40nm
+      local:
+        - name: Scratchpad 
+          class: SRAM
+          attributes:
+            entries: 262144
+            depth: 16384
+            width: 128
+            instances: 1
+            meshX: 1
+            word-bits: 8
+            n_rdwr_ports: 1
+            n_banks: 4
+        - name: Accumulator
+          class: SRAM
+          attributes:
+            entries: 16384
+            depth: 1024
+            width: 512
+            instances: 1
+            meshX: 1
+            word-bits: 32
+            network-word-bits: 16
+            n_rdwr_ports: 2
+            n_banks: 2
+      subtree:
+      - name: PE[0..255]
+        local:
+        - name: Registers
+          class: SRAM
+          attributes:
+            depth: 1
+            width: 8
+            entries: 1
+            meshX: 16
+            word-bits: 8
+            n_rdwr_ports: 2
+            n_banks: 1
+        - name: MACC
+          class: intmac
+          attributes:
+            datawidth: 8
+            meshX: 16
+            word-bits: 8

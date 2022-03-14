@@ -1,0 +1,17 @@
+mm
+-----
+Results cycle - 4214784, energy - 11035553402.85
+Results cycle - 50176, energy - 138855120.4
+Results cycle - 2408448, energy - 11968993166.79
+Results cycle - 516096, energy - 968854286.15
+Results cycle - 8388608, energy - 31972615584.8
+Results cycle - 32768, energy - 71546046.39
+Results cycle - 524288, energy - 830968816.56
+Results cycle - 8192, energy - 16487655.56
+
+conv
+-----
+Results cycle - 32768, energy - 44552708.18
+Results cycle - 524288, energy - 1355269989.63
+Results cycle - 1048576, energy - 991530369.93
+Results cycle - 131072, energy - 122821557.39

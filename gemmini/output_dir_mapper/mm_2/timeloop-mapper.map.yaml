@@ -1,0 +1,52 @@
+mapping:
+  - target: Registers
+    type: datatype
+    keep:
+      []
+    bypass:
+      - Weights
+      - Inputs
+      - Outputs
+  - target: Accumulator
+    type: datatype
+    keep:
+      - Inputs
+    bypass:
+      - Weights
+      - Outputs
+  - target: Scratchpad
+    type: datatype
+    keep:
+      - Weights
+      - Outputs
+    bypass:
+      - Inputs
+  - target: DRAM
+    type: datatype
+    keep:
+      - Weights
+      - Inputs
+      - Outputs
+    bypass:
+      []
+  - target: Registers
+    type: temporal
+    factors: R1 S1 P2 Q1 C2 K2 N1
+    permutation: PCKRSQN
+  - target: Accumulator
+    type: spatial
+    factors: R1 S1 P4 Q1 C16 K4 N1
+    permutation: CPKRSQN
+    split: 1
+  - target: Accumulator
+    type: temporal
+    factors: R1 S1 P4 Q1 C8 K16 N1
+    permutation: KPCRSQN
+  - target: Scratchpad
+    type: temporal
+    factors: R1 S1 P16 Q1 C2 K1 N1
+    permutation: PCRSQKN
+  - target: DRAM
+    type: temporal
+    factors: R1 S1 P1 Q1 C1 K4 N1
+    permutation: KRSPQCN

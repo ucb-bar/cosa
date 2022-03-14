@@ -1,0 +1,384 @@
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 175
+  Factorization options along problem dimension Q = 175
+  Factorization options along problem dimension C = 210
+  Factorization options along problem dimension K = 210
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 1350562500
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 168820313 Residue: 4
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =   10.810
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 5
+  Factorization options along problem dimension S = 5
+  Factorization options along problem dimension P = 25
+  Factorization options along problem dimension Q = 25
+  Factorization options along problem dimension C = 495
+  Factorization options along problem dimension K = 495
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 3828515625
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 478564454 Residue: 7
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 0.19 | pJ/Compute =  103.533
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 5
+  Factorization options along problem dimension S = 5
+  Factorization options along problem dimension P = 5
+  Factorization options along problem dimension Q = 5
+  Factorization options along problem dimension C = 715
+  Factorization options along problem dimension K = 715
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 319515625
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 39939454 Residue: 7
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 0.88 | pJ/Compute =    8.381
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 715
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 715
+  Factorization options along problem dimension K = 126
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 64414350
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 8051794 Residue: 2
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =    8.529
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 715
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 715
+  Factorization options along problem dimension K = 715
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 365525875
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 45690735 Residue: 5
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =    6.191
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 330
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 330
+  Factorization options along problem dimension K = 330
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 35937000
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 4492125 Residue: 0
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =    7.862
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 330
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 715
+  Factorization options along problem dimension K = 330
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 77863500
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 9732938 Residue: 4
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =    5.311
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 330
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 1365
+  Factorization options along problem dimension K = 715
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 322071750
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 40258969 Residue: 2
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =   10.098
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 330
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 715
+  Factorization options along problem dimension K = 1365
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 322071750
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 40258969 Residue: 2
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 0.50 | pJ/Compute =    7.387
+  _______                __                
+ /_  __(_)___ ___  ___  / /___  ____  ____ 
+  / / / / __ `__ \/ _ \/ / __ \/ __ \/ __ \
+ / / / / / / / / /  __/ / /_/ / /_/ / /_/ /
+/_/ /_/_/ /_/ /_/\___/_/\____/\____/ .___/ 
+                                  /_/      
+
+Problem configuration complete.
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 16  cluster-size: 1
+Warning: neither block size nor cluster size specified, set according to specified storage width: block size: 1  cluster-size: 1
+Architecture configuration complete.
+Sparse optimization configuration complete.
+Using threads = 8
+Mapper configuration complete.
+Initializing Index Factorization subspace.
+  Factorization options along problem dimension R = 1
+  Factorization options along problem dimension S = 1
+  Factorization options along problem dimension P = 330
+  Factorization options along problem dimension Q = 1
+  Factorization options along problem dimension C = 715
+  Factorization options along problem dimension K = 715
+  Factorization options along problem dimension N = 1
+Mapspace Dimension [IndexFactorization] Size: 168704250
+Mapspace Dimension [LoopPermutation] Size: 645241282560000
+Mapspace Dimension [Spatial] Size: 8
+Mapspace Dimension [DatatypeBypass] Size: 512
+Mapspace split! Per-split Mapping Dimension [IndexFactorization] Size: 21088032 Residue: 6
+Mapspace construction complete.
+Search configuration complete.
+
+
+Summary stats for best mapping found by mapper:
+  Utilization = 1.00 | pJ/Compute =    3.660
+/scratch/qijing.huang/cosa_gemmini/prob/conv/conv_0.yaml
+Results cycle - 4214784, energy - 11035553402.85
+/scratch/qijing.huang/cosa_gemmini/prob/conv/conv_1.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/conv_1
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/conv/conv_1.yaml
+Results cycle - 50176, energy - 138855120.4
+/scratch/qijing.huang/cosa_gemmini/prob/conv/conv_2.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/conv_2
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/conv/conv_2.yaml
+Results cycle - 2408448, energy - 11968993166.79
+/scratch/qijing.huang/cosa_gemmini/prob/conv/conv_3.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/conv_3
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/conv/conv_3.yaml
+Results cycle - 516096, energy - 968854286.15
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_0.yaml
+Results cycle - 8388608, energy - 31972615584.8
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_1.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_1
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_1.yaml
+Results cycle - 32768, energy - 71546046.39
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_2.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_2
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_2.yaml
+Results cycle - 524288, energy - 830968816.56
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_3.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_3
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_3.yaml
+Results cycle - 8192, energy - 16487655.56
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_4.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_4
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_4.yaml
+Results cycle - 32768, energy - 44552708.18
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_5.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_5
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_5.yaml
+Results cycle - 524288, energy - 1355269989.63
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_6.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_6
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_6.yaml
+Results cycle - 1048576, energy - 991530369.93
+/scratch/qijing.huang/cosa_gemmini/prob/mm/mm_7.yaml
+/scratch/qijing.huang/cosa_gemmini/output_dir/mm_7
+run_timeloop> /scratch/qijing.huang/timeloop-new/build/timeloop-mapper /scratch/qijing.huang/cosa_gemmini/arch/arch.yaml /scratch/qijing.huang/cosa_gemmini/mapspace/mapspace.yaml /scratch/qijing.huang/cosa_gemmini/prob/mm/mm_7.yaml
+Results cycle - 131072, energy - 122821557.39
