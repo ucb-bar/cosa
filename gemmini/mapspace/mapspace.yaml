@@ -7,46 +7,54 @@ mapper:
   algorithm: random-pruned
   # max-permutations-per-if-visit: 16
 
-architecture_constraints:
+mapspace_constraints:
   targets:
-    # - factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
-    #   permutation: RSCPQKN
-    #   target: Registers
-    #   type: temporal
-    #   - factors: R=1 S=1 P=16 Q=1 C=16 K=1 N=1
-    #     permutation: RSCPQKN
-    #     target: Accumulator
-    #     type: spatial
-    #   - factors: R=1 S=1 P=1 Q=1 C=1 K=16 N=1
-    #     permutation: RSCPQKN
-    #     target: Accumulator
-    #     type: temporal
-    # - factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
-    #   permutation: RSCPQKN
-    #   target: Scratchpad
-    #   type: temporal
-    # - factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
-    #   permutation: RSCPQKN
-    #   target: DRAM
-    #   type: temporal
-    #   - bypass:
-    #     - Outputs
-    #     keep:
-    #     - Inputs
-    #     - Weights
-    #     target: Registers
-    #     type: bypass
-    #   - bypass:
-    #     - Weights
-    #     - Inputs
-    #     keep:
-    #     - Outputs
-    #     target: Accumulator
-    #     type: bypass
-  - bypass: []
+    - target: Registers
+      type: temporal
+      factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
+      permutation: PQRSCKN
+    - target: Accumulator
+      type: spatial
+      factors: R=1 S=1 P=1 Q=1 C<=16 K<=16 N=1
+      permutation: RSCKPQN
+      split: 3
+    - target: Accumulator
+      type: temporal
+      # factors: []  
+      permutation: PKCQRSN
+    - target: Scratchpad
+      type: temporal
+      # factors: [] 
+      permutation: PKCQRSN
+    - target: DRAM
+      type: temporal
+      factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
+      permutation: CKPQRSN
+
+  - target: Registers
+    type: bypass
+    bypass:
+    - Outputs
+    - Inputs
+    keep:
+    - Weights
+  - target: Accumulator
+    type: bypass
+    bypass:
+    - Weights
+    - Inputs
+    keep:
+    - Outputs
+  - target: Scratchpad
+    type: bypass
+    keep:
+    - Inputs
+    - Weights
+    bypass:
+    - Outputs
+  - target: DRAM
+    type: bypass
     keep:
     - Weights
     - Inputs
     - Outputs
-    target: DRAM
-    type: bypass

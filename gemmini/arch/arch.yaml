@@ -7,13 +7,11 @@ architecture:
     - name: DRAM
       class: DRAM
       attributes:
-          #        width: 256
-          #        block_size: 32
-          #        word-bits: 8
+        # reduction_supported: true
         instances: 1
         word-bits: 8
         block_size: 64
-        # bandwidth: 20.0
+        shared_bandwidth: 16
 
     subtree:
     - name: Chip
