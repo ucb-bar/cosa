@@ -11,7 +11,7 @@ architecture:
         instances: 1
         word-bits: 8
         block_size: 64
-        shared_bandwidth: 16
+        shared_bandwidth: 5.75
 
     subtree:
     - name: Chip
