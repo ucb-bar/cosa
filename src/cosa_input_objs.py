@@ -10,7 +10,7 @@ from parse_workload import *
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.NOTSET)  # capture everything
-logger.disabled = True
+# logger.disabled = True
 
 
 class Prob(object):

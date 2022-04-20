@@ -1,0 +1,30 @@
+mapspace:
+  constraints:
+  - target: Registers
+    type: datatype
+    bypass:
+    - Outputs
+    - Inputs
+    keep:
+    - Weights
+  - target: Accumulator
+    type: datatype
+    bypass:
+    - Weights
+    - Inputs
+    keep:
+    - Outputs
+  - target: Scratchpad
+    type: datatype
+    keep:
+    - Inputs
+    - Weights
+    bypass:
+    - Outputs
+  - target: DRAM
+    type: datatype
+    keep:
+    - Weights
+    - Inputs
+    - Outputs
+    bypass: []

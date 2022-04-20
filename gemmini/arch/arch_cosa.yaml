@@ -1,0 +1,41 @@
+arch:
+  arithmetic:
+    instances: 256
+    meshX: 16
+    word-bits: 8
+  storage:
+  - name: Registers
+    entries: 1
+    instances: 256
+    meshX: 16
+    word-bits: 8
+    n_rdwr_ports: 2
+    n_banks: 1
+  - name: Accumulator
+    entries: 16384
+    depth: 1024
+    width: 512
+    instances: 1
+    meshX: 1
+    word-bits: 32
+    network-word-bits: 16
+    n_rdwr_ports: 2
+    n_banks: 2
+  - name: Scratchpad 
+    class: SRAM
+    entries: 262144
+    depth: 16384
+    width: 128
+    instances: 1
+    meshX: 1
+    word-bits: 8
+    n_rdwr_ports: 1
+    n_banks: 4
+  - name: DRAM
+    technology: "DRAM"
+    # reduction_supported: true
+    instances: 1
+    word-bits: 8
+    block_size: 64
+    bandwidth: 5.75
+

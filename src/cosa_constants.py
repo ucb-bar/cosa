@@ -15,9 +15,9 @@ _A = [
 # assume 6 levels of ranks
 # v=3, i=6 var - rank
 _B = [
-    [1, 0, 1, 0, 0, 1],  # Weights
-    [0, 0, 0, 1, 1, 1],  # Inputs
-    [0, 1, 0, 0, 1, 1],  # Outputs
+    [1, 0, 1, 1],  # Weights
+    [0, 0, 1, 1],  # Inputs
+    [0, 1, 0, 1],  # Outputs
 ]
 
 # for uneven mapping

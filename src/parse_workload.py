@@ -11,9 +11,9 @@ import utils
 from utils import OrderedDefaultdict
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.NOTSET)  # capture everything
+# logger.setLevel(logging.NOTSET)  # capture everything
 # logger.setLevel(logging.) # capture everything
-logger.disabled = True
+# logger.disabled = True
 
 all_var_names = ["Weights", "Inputs", "Outputs"]
 
