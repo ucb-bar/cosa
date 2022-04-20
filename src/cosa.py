@@ -160,7 +160,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     x = {}  # x_jn_jn
     
     # Add problem dim that can be mapped to the systolic array 
-    valid_dim = [2,3,5,6] # PQKN
+    valid_dim = [4,5] # CK 
     for i in range(total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
