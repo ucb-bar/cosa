@@ -7,8 +7,8 @@ import re
 import xml.etree.ElementTree as ET
 
 import numpy as np
-import utils
-from utils import OrderedDefaultdict
+import cosa.utils
+from cosa.utils import OrderedDefaultdict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.NOTSET)  # capture everything

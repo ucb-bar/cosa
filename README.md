@@ -7,30 +7,50 @@ For more details, please refer to:
 CoSA leverages the regularities in DNN operators and hardware to formulate the DNN scheduling space into a MIP problem with algorithmic and architectural constraints, which can be solved to automatically generate a highly efficient schedule in one shot.
 
 ## Installation
-0. CoSA 
-Download the CoSA source code `
-git clone git@github.com:ucb-bar/cosa.git
-`
-1. Gurobi
-Please follow the instructions in [Gurobi for Academics and Researchers](https://www.gurobi.com/academia/academic-program-and-licenses/) to install Gurobi optimizer and obtain an academic license.
-2. Timeloop
+
+1. Obtain a Gurobi license (see [here](https://www.gurobi.com/academia/academic-program-and-licenses/) for instructions on obtaining one for free if you're an academic). You do **not** need to download or install Gurobi itself. Once you have a license, download and extract the [Gurobi license manager](https://support.gurobi.com/hc/en-us/articles/360059842732-How-do-I-set-up-a-license-without-installing-the-full-Gurobi-package-), then run the `grbgetkey` executable, supplying your [license key](https://www.gurobi.com/downloads/licenses/) when required. If you select a non-default location for the license file, specify the location of the file using:
+```
+export GRB_LICENSE_FILE=/path/to/gurobi.lic
+```
+2. Timeloop (optional - can be skipped if you only want to run the scheduler, without Timeloop benchmarking): 
 Please refer to the instructions in the [Timeloop Tutorial](http://accelergy.mit.edu/infra_instructions.html) to install Timeloop with Docker.
 To install from source code please, follow the instructions in [Timeloop Github](https://github.com/NVlabs/timeloop).
-The specific Timeloop version used for CoSA evaluation is commit [11920be](https://github.com/NVlabs/timeloop/commit/11920be5a744239c985ff049256f2fc40f65ce8b).
-3. Python3
-Install packages for Python3 with:
+The specific Timeloop version used for CoSA evaluation is commit [11920be](https://github.com/NVlabs/timeloop/commit/11920be5a744239c985ff049256f2fc40f65ce8b). Set 
+3. Download and install CoSA (instructions here for a venv):
 ```
-pip install numpy==1.19.0 PyYAML==5.3.1 yamlordereddictloader==0.4.0 seaborn==0.10.1 \
-    matplotlib==3.2.2 pandas==1.0.5 gurobipy
+git clone https://github.com/ucb-bar/cosa.git 
+python -m venv $HOME/.venv/cosa
+source $HOME/.venv/cosa/bin/activate
+python -m pip install -U pip
+python -m pip install -e cosa
 ```
-4. Environment Set##up 
-Update `env.sh` with the paths to `COSA_DIR`, `TIMELOOP_DIR`, `GUROBI_HOME`, and `GRB_LICENSE_FILE`, and source the environment `source env.sh`.
+Alternatively, if using [poetry](https://python-poetry.org/):
+```
+poetry install git+https://github.com/ucb-bar/cosa.git#main
+``` 
 
 ## Run CoSA
 
-To run one scheduling example:
+To run the sample schedule, simply run: `cosa` from the command line.
+
+CoSA can be run with the following flags:
+
 ```
-python3 src/cosa.py
+usage: cosa [-h] [-o OUTPUT_DIR] [-ap ARCH_PATH] [-mp MAPSPACE_PATH]
+            [-pp PROB_PATH]
+
+Run Configuration
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        Output Folder
+  -ap ARCH_PATH, --arch_path ARCH_PATH
+                        Hardware Architecture Path
+  -mp MAPSPACE_PATH, --mapspace_path MAPSPACE_PATH
+                        Mapspace Path
+  -pp PROB_PATH, --prob_path PROB_PATH
+                        Problem Dimension Path
 ```
 
 ## CoSA Inputs and Outputs

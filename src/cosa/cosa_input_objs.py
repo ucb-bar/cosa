@@ -4,9 +4,10 @@ import logging
 import pathlib
 
 import numpy as np
-import run_config
-import utils
-from parse_workload import *
+import cosa.run_config
+
+import cosa.utils as utils
+from cosa.parse_workload import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # capture everything
