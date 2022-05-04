@@ -1,0 +1,50 @@
+mapping:
+    - target: Registers
+      type: temporal
+      factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
+      permutation: PQRSCKN
+    - target: Accumulator
+      type: spatial
+      factors: R=1 S=1 P=1 Q=1 C=16 K=16 N=1
+      permutation: RSCKPQN
+      split: 3
+    - target: Accumulator
+      type: temporal
+      factors: R=1 S=1 P=128 Q=1 C=8 K=8 N=1  
+      permutation: PKCQRSN
+    - target: Scratchpad
+      type: temporal
+      factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1  
+      permutation: PKCQRSN
+    - target: DRAM
+      type: temporal
+      factors: R=1 S=1 P=1 Q=1 C=1 K=1 N=1
+      permutation: CKPQRSN
+
+    - target: Registers
+      type: bypass
+      bypass:
+      - Outputs
+      - Inputs
+      keep:
+      - Weights
+    - target: Accumulator
+      type: bypass
+      bypass:
+      - Weights
+      - Inputs
+      keep:
+      - Outputs
+    - target: Scratchpad
+      type: bypass
+      keep:
+      - Inputs
+      - Weights
+      bypass:
+      - Outputs
+    - target: DRAM
+      type: bypass
+      keep:
+      - Weights
+      - Inputs
+      - Outputs
