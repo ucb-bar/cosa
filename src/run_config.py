@@ -103,8 +103,9 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
     mapping = mapspace.generate_mapping()
 
     output_base = pathlib.Path(output_path).resolve()
-    output_dir = output_base / mapspace.arch.config_str() / mapspace.prob.config_str() / mapspace.config_str()[0] / \
-                 mapspace.config_str()[1]
+    output_dir = output_base
+    # output_dir = output_base / mapspace.arch.config_str() / mapspace.prob.config_str() / mapspace.config_str()[0] / \
+    #             mapspace.config_str()[1]
 
     status_dict[status_dict_key]['output_dir'] = str(output_dir)
 
