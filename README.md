@@ -26,7 +26,9 @@ python -m pip install -e cosa
 ```
 Alternatively, if using [poetry](https://python-poetry.org/):
 ```
-poetry install git+https://github.com/ucb-bar/cosa.git#main
+poetry init
+poetry add git+https://github.com/ucb-bar/cosa.git#main
+poetry shell
 ``` 
 
 ## Run CoSA

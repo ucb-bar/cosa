@@ -18,7 +18,7 @@ logger.disabled = True
 try:
     _COSA_DIR = os.path.expanduser(os.environ['COSA_DIR'])
 except KeyError:
-    _COSA_DIR = os.path.abspath(__file__ + "/../../../")
+    _COSA_DIR = os.path.abspath(__file__ + "/../")
 
 
 def construct_argparser():

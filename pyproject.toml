@@ -7,6 +7,10 @@ license = "BSD-2-Clause"
 packages = [
     { include = "cosa", from = "src" }
 ]
+#include = [
+    # {path = "configs/**", format = "sdist" },
+   # {path = "configs/**", format = "wheel" }
+#]
 
 [tool.poetry.dependencies]
 python = "^3.8"
