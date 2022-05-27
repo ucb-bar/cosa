@@ -16,7 +16,11 @@ export GRB_LICENSE_FILE=/path/to/gurobi.lic
 Please refer to the instructions in the [Timeloop Tutorial](http://accelergy.mit.edu/infra_instructions.html) to install Timeloop with Docker.
 To install from source code please, follow the instructions in [Timeloop Github](https://github.com/NVlabs/timeloop).
 The specific Timeloop version used for CoSA evaluation is commit [11920be](https://github.com/NVlabs/timeloop/commit/11920be5a744239c985ff049256f2fc40f65ce8b). Set 
-3. Download and install CoSA (instructions here for a venv):
+3. Download and install CoSA:
+```
+pip install cosa-scheduler
+```
+To install manually:
 ```
 git clone https://github.com/ucb-bar/cosa.git 
 python -m venv $HOME/.venv/cosa
@@ -27,7 +31,9 @@ python -m pip install -e cosa
 Alternatively, if using [poetry](https://python-poetry.org/):
 ```
 poetry init
-poetry add git+https://github.com/ucb-bar/cosa.git#main
+poetry add cosa-scheduler
+# run this instead for git version
+# poetry add git+https://github.com/ucb-bar/cosa.git#main
 poetry shell
 ``` 
 
