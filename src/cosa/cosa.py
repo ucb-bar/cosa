@@ -6,16 +6,19 @@ import pathlib
 import time
 
 import numpy as np
-import run_config
-from cosa_constants import _A, _B
-from cosa_input_objs import Prob, Arch, Mapspace
+import cosa.run_config as run_config
+from cosa.cosa_constants import _A, _B
+from cosa.cosa_input_objs import Prob, Arch, Mapspace
 from gurobipy import *
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # capture everything
 logger.disabled = True
 
-_COSA_DIR = os.environ['COSA_DIR']
+try:
+    _COSA_DIR = os.path.expanduser(os.environ['COSA_DIR'])
+except KeyError:
+    _COSA_DIR = os.path.abspath(__file__ + "/../")
 
 
 def construct_argparser():
@@ -548,7 +551,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
     # uneven mapping config
     # Z = _Z
     # B = None
-
+ 
     # partition ratios for W, IA, OA
     part_ratios = [
         [1, 0, 0],
@@ -593,8 +596,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
 
     return status_dict
 
-
-if __name__ == "__main__":
+def run_cosa():
     parser = construct_argparser()
     args = parser.parse_args()
 
@@ -604,3 +606,7 @@ if __name__ == "__main__":
     output_path = args.output_dir
 
     run_timeloop(prob_path, arch_path, mapspace_path, output_path)
+
+
+if __name__ == "__main__":
+    run_cosa()

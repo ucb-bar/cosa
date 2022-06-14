@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "cosa-scheduler"
+version = "0.1.0"
+description = "A constrained-optimization based scheduler for spatial DNN accelerators"
+authors = ["Qijing Huang <qijing.huang@berkeley.edu>"]
+license = "BSD-2-Clause"
+packages = [
+    { include = "cosa", from = "src" }
+]
+#include = [
+    # {path = "configs/**", format = "sdist" },
+   # {path = "configs/**", format = "wheel" }
+#]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "^1.22.3"
+PyYAML = "^6.0"
+gurobipy = "^9.5.1"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+cosa = "cosa.cosa:run_cosa"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

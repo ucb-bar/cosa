@@ -2,8 +2,8 @@ import logging
 import pathlib
 import shutil
 
-import utils
-from parse_workload import *
+import cosa.utils
+from cosa.parse_workload import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # capture everything

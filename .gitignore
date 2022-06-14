@@ -1,0 +1,16 @@
+*.pyc
+*.pyo
+build/
+dist/
+
+#output and LP dumps, problem-specific
+output_dir/
+debug.lp
+
+#gurobi license keys and tools
+#proprietary SW - do NOT add to repo.
+#users must download from gurobi website
+grb_ts
+grbgetkey
+grbprobe
+*.lic
