@@ -2,6 +2,7 @@
 import copy
 import logging
 import pathlib
+import re
 
 import numpy as np
 import run_config
@@ -10,7 +11,7 @@ from parse_workload import *
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.NOTSET)  # capture everything
-# logger.disabled = True
+logger.disabled = True
 
 
 class Prob(object):
@@ -67,7 +68,8 @@ class Prob(object):
         self.path = prob_path.resolve()
         prob_dict = utils.parse_yaml(self.path)
         self.prob = prob_dict['problem']
-
+        if 'instance' in self.prob.keys():
+            self.prob = self.prob['instance']
         for key, value in self.prob.items():
             if ('stride' in key or 'dilation' in key):
                 continue
@@ -111,7 +113,7 @@ class Arch(object):
 
         # arch config version, please add a postfix _v3 to
         # the yaml filename if a new version is used
-        version = 'v3' if '_v3' in self.path.name else 'v1'
+        version = 'v3' # if '_v3' in self.path.name else 'v1'
 
         # mem instance size for each 
         self.mem_instances = []
@@ -138,25 +140,74 @@ class Arch(object):
             self.global_buf = arch_dict['architecture']['subtree'][0]['subtree'][0]['local'][0]
             self.pe_buf = arch_dict['architecture']['subtree'][0]['subtree'][0]['subtree'][0]['local']
             idx = 0
-            for i, mem in enumerate(self.pe_buf[::-1]):
-                if mem['class'] == 'SRAM' or mem['class'] == 'regfile':
-                    self.mem_idx[mem['name']] = idx
-                    self.mem_name[idx] = mem['name']
-                    self.mem_instances.append(mem['attributes']['instances'])
-                    self.mem_entries.append(mem['attributes']['entries'])
+
+            if (len(self.pe_buf)) > 1:
+                # for backward compatibility to the simba_v3 yaml files
+                for i, mem in enumerate(self.pe_buf[::-1]):
+                    if mem['class'] == 'SRAM' or mem['class'] == 'regfile':
+                        self.mem_idx[mem['name']] = idx
+                        self.mem_name[idx] = mem['name']
+                        self.mem_instances.append(mem['attributes']['instances'])
+                        self.mem_entries.append(mem['attributes']['entries'])
+                        idx += 1
+            else:
+                def iter_local(buf_level, mem_names, mem_instances, mem_entries, fanout):
+                    for mem in buf_level['local']:
+                        if mem['class'] == 'SRAM' or mem['class'] == 'regfile':
+                            mem_names.append(mem['name'])
+                            # if 'instances' in mem['attributes']:
+                            #   mem_instances.append(mem['attributes']['instances'])
+                            mem_entries.append(mem['attributes']['entries'])
+                            mem_instances.append(fanout)
+
+
+                # parse all hierarchical simba definition
+                mem_names  = []
+                def iter_subtree(buf_level, mem_names, mem_instances, mem_entries, fanout):
+                    # - name: VectorArray[0..7] for 8 vecto
+                    m = re.match(r"\w+\[0\.\.(\d+)\]", buf_level['name'])
+                    if m:
+                        cur_fanout = int(m.group(1)) + 1
+                    else:
+                        cur_fanout = 1
+                    fanout = cur_fanout * fanout
+
+                    iter_local(buf_level, mem_names, mem_instances, mem_entries, fanout)
+                    if 'subtree' in buf_level.keys():
+                        iter_subtree(buf_level['subtree'][0], mem_names, mem_instances, mem_entries, fanout)
+
+                pe_buf_level = arch_dict['architecture']['subtree'][0]['subtree'][0]['subtree'][0]
+                iter_subtree(pe_buf_level, mem_names, self.mem_instances, self.mem_entries, fanout=1)
+                mem_names.reverse()
+                for name in mem_names:
+                    self.mem_idx[name] = idx
+                    self.mem_name[idx] = name
                     idx += 1
+
+                self.mem_instances.reverse()
+                self.mem_entries.reverse()
 
             self.mem_idx[self.global_buf['name']] = idx
             self.mem_name[idx] = self.global_buf['name']
-            self.mem_instances.append(self.global_buf['attributes']['instances'])
+
+            if '[' in self.global_buf['name'] or 'instances' in self.global_buf['attributes'].keys() and self.global_buf['attributes']['instances'] != 1:
+                raise ValueError("GlobalBuffer specification not supported.")
+
+            self.mem_instances.append(1)
             self.mem_entries.append(self.global_buf['attributes']['entries'])
             idx += 1
             self.mem_idx[self.dram['name']] = idx
             self.mem_name[idx] = self.dram['name']
-            self.mem_instances.append(self.dram['attributes']['instances'])
+            if '[' in self.dram['name'] or 'instances' in self.dram['attributes'].keys() and self.dram['attributes']['instances'] != 1:
+                raise ValueError("DRAM specification not supported.")
+
+            self.mem_instances.append(1)
             self.arch = {"instances": self.mem_instances, "entries": self.mem_entries}
         self.mem_levels = len(self.mem_idx.items())
         self.S = self.gen_spatial_constraint()
+
+        # print(self.mem_idx)
+        # print(self.S)
 
     def gen_spatial_constraint(self):
         """Generate spatial constraints."""
@@ -181,10 +232,14 @@ class Mapspace(object):
 
     def __init__(self, path):
         mapspace_dict = utils.parse_yaml(path)
-        self.mapspace = mapspace_dict['mapspace']
+        if 'mapspace' in mapspace_dict.keys():
+            self.mapspace = mapspace_dict['mapspace']
+            for key, value in self.mapspace.items():
+                setattr(self, key, value)
+        else:
+            self.mapspace = mapspace_dict['mapspace_constraints'] 
+            setattr(self, 'constraints', self.mapspace)
 
-        for key, value in self.mapspace.items():
-            setattr(self, key, value)
 
         self.var_idx_dict = {'Weights': 0, 'Inputs': 1, 'Outputs': 2}
         self.var_name_dict = {v: k for k, v in self.var_idx_dict.items()}
@@ -748,9 +803,10 @@ class Mapspace(object):
         except:
             logger.error("{} not equals to {}".format(map_prob_bound, self.prob.prob_bound[0:len(map_prob_bound)]))
 
-    def generate_mapping(self):
+    def generate_mapping(self, for_mapper=False):
         mapping = {}
-        mapping['mapping'] = []
+        key = 'architecture_constraints' if for_mapper else 'mapping' 
+        mapping[key] = []
         map_prob_bound = [1] * self.mapspace.shape[2]
 
         for mem_idx in range(self.mapspace.shape[0]):
@@ -777,7 +833,7 @@ class Mapspace(object):
                         map_prob_bound[prob_idx] *= self.mapspace[mem_idx][org_idx][prob_idx][1]
                 config['factors'] = self.generate_tile_str(factors)
                 config['permutation'] = self.generate_perm_str(permutations)
-                mapping['mapping'].append(config)
+                mapping[key].append(config)
 
         # Make sure the prob size for the mapping matches the orig prob size
         try:
@@ -798,7 +854,7 @@ class Mapspace(object):
                     keep.append(self.var_name_dict[var_idx])
             config['bypass'] = bypass
             config['keep'] = keep
-            mapping['mapping'].append(config)
+            mapping[key].append(config)
 
         return mapping
 

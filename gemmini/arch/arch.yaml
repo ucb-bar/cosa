@@ -18,17 +18,20 @@ architecture:
       attributes:
         technology: 40nm
       local:
-        - name: Scratchpad 
-          class: SRAM
-          attributes:
-            entries: 262144
-            depth: 16384
-            width: 128
-            instances: 1
-            meshX: 1
-            word-bits: 8
-            n_rdwr_ports: 1
-            n_banks: 4
+      - name: Scratchpad 
+        class: SRAM
+        attributes:
+          entries: 262144
+          depth: 16384
+          width: 128
+          instances: 1
+          meshX: 1
+          word-bits: 8
+          n_rdwr_ports: 1
+          n_banks: 4
+      subtree:
+      - name: Subchip
+        local:
         - name: Accumulator
           class: SRAM
           attributes:
@@ -41,22 +44,22 @@ architecture:
             network-word-bits: 16
             n_rdwr_ports: 2
             n_banks: 2
-      subtree:
-      - name: PE[0..255]
-        local:
-        - name: Registers
-          class: SRAM
-          attributes:
-            depth: 1
-            width: 8
-            entries: 1
-            meshX: 16
-            word-bits: 8
-            n_rdwr_ports: 2
-            n_banks: 1
-        - name: MACC
-          class: intmac
-          attributes:
-            datawidth: 8
-            meshX: 16
-            word-bits: 8
+        subtree:
+        - name: PE[0..255]
+          local:
+          - name: Registers
+            class: SRAM
+            attributes:
+              depth: 1
+              width: 8
+              entries: 1
+              # meshX: 16
+              word-bits: 8
+              n_rdwr_ports: 2
+              n_banks: 1
+          - name: MACC
+            class: intmac
+            attributes:
+              datawidth: 8
+              # meshX: 16
+              word-bits: 8

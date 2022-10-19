@@ -90,76 +90,96 @@ def get_summary_info(stats_file):
     with open(stats_file, 'r') as f:
         lines = f.readlines()
     for line in lines:
-        # m = re.match(r"Energy: (.*) uJ", line)
-        m = re.match(r"Total topology energy: (.*) pJ", line)
+        #  m = re.match(r"Total topology energy: (.*) pJ", line)
+        m = re.match(r"Energy: (.*) uJ", line)
         if m:
             energy = m.group(1)
             summary['energy'] = float(energy)
         else:
-            m = re.match(r"Max topology cycles: (.*)", line)
+            # m = re.match(r"Max topology cycles: (.*)", line)
+            m = re.match(r"Cycles: (.*)", line)
             if m:
                 cycle = m.group(1)
                 summary['cycle'] = int(cycle)
+            else:
+                m = re.match(r"Utilization: (.*)", line)
+                if m:
+                    utilization = m.group(1)
+                    summary['util'] = float(utilization)
+                else:
+                    m = re.match(r"Area: (.*) mm^2", line)
+                    if m:
+                        area = m.group(1)
+                        summary['area'] = float(area)
     return summary
 
 
-"""
-
-Returns: 
-subnest_info = {
-    subnest = {
-        'Registers': [{'end': '1', 'spacetime_dimension': '0', '@class_id': '11', '@tracking_level': '0', 'start': '0', 'stride': '1', '@version': '0', 'dimension': '6'}, ...],  # arrays of subnest info 
-        
-    },
-    bufsize = {
-        'Registers': ('Registers', [0, 1, 0]), # buffered size for Weights, Inputs, Outputs
-        ...
-    }
-
-}
-
-"""
-
 
 def get_subnest_info(xml_file):
+    """
+
+    Returns: 
+    subnest_info = {
+        subnest = {
+            'Registers': [{'end': '1', 'spacetime_dimension': '0', '@class_id': '11', '@tracking_level': '0', 'start': '0', 'stride': '1', '@version': '0', 'dimension': '6'}, ...],  # arrays of subnest info 
+            
+        },
+        bufsize = {
+            'Registers': ('Registers', [0, 1, 0]), # buffered size for Weights, Inputs, Outputs
+            ...
+        }
+
+    }
+
+    """
+
     logger.info("================ Parse Subnest Info from {0} ================".format(xml_file))
     xml_path = pathlib.Path(xml_file)
+    # xml file ends with map+stats.xml
     stats_file = xml_path.parent / xml_path.name.replace('map+stats.xml', 'stats.txt')
     summary_info = get_summary_info(stats_file)
 
     subnest_info = {}
     subnest_info['energy'] = summary_info['energy']
     subnest_info['cycle'] = summary_info['cycle']
-    tree = ET.parse(xml_file);
-    root = tree.getroot()
 
-    timeloop_dict = xml2dict(root)
-    # print(timeloop_dict)
+    if xml_path.exists(): 
 
-    # print(timeloop_dict['boost_serialization']['best_mapped_engine']['topology_']['levels_']['item'])
-    arch = timeloop_dict['boost_serialization']['engine']['topology_']['levels_']['item']
-    arith = arch[0]
-    # print(arith['px']['@class_name'])
-    subnest_info['pe_cycle'] = int(arith['px']['cycles_'])
-    subnest_info['pe_energy'] = float(arith['px']['energy_'])
+        tree = ET.parse(xml_file);
+        root = tree.getroot()
 
-    bufsize = collections.OrderedDict()
-    subnest = collections.OrderedDict()
+        timeloop_dict = xml2dict(root)
 
-    for buf in arch[1:]:
-        level_name = buf['px']['specs_']['LevelSpecs']['level_name']
-        bufsize_arr = buf['px']['stats_']['utilized_capacity']['PerDataSpace']['item']
-        bufsize_arr = [int(size) for size in bufsize_arr]
+        # print(timeloop_dict['boost_serialization']['best_mapped_engine']['topology_']['levels_']['item'])
+        arch = timeloop_dict['boost_serialization']['engine']['topology_']['levels_']['item']
+        arith = arch[0]
+        # print(arith['px']['@class_name'])
+        subnest_info['pe_cycle'] = int(arith['px']['cycles_'])
+        subnest_info['pe_energy'] = float(arith['px']['energy_'])
 
-        bufsize[level_name] = bufsize_arr  # weight, input, output
-        subnest_attr = buf['px']['subnest_']['item']
-        if not isinstance(subnest_attr, list):
-            subnest_attr = [subnest_attr]
+        bufsize = collections.OrderedDict()
+        subnest = collections.OrderedDict()
 
-        subnest[level_name] = subnest_attr
+        for buf in arch[1:]:
+            level_name = buf['px']['specs_']['LevelSpecs']['level_name']
+            bufsize_arr = buf['px']['stats_']['utilized_capacity']['PerDataSpace']['item']
+            bufsize_arr = [int(size) for size in bufsize_arr]
 
-    subnest_info['bufsize'] = bufsize
-    subnest_info['subnest'] = subnest
+            bufsize[level_name] = bufsize_arr  # weight, input, output
+            subnest_attr = buf['px']['subnest_']['item']
+            if not isinstance(subnest_attr, list):
+                subnest_attr = [subnest_attr]
+
+            subnest[level_name] = subnest_attr
+
+        subnest_info['bufsize'] = bufsize
+        subnest_info['subnest'] = subnest
+    # use stats_path instead
+    elif xml_path.name.endswith('stats.txt'):
+        # TODO check if xml will be kept 
+        stats_path = xml_path
+        subnest_info = get_summary_info(stats_path) 
+
     return subnest_info
 
 

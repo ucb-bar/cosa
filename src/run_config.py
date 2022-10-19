@@ -7,8 +7,8 @@ import utils
 from parse_workload import *
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.NOTSET)  # capture everything
-#logger.disabled = True
+#logger.setLevel(logger.NOTSET)  # capture everything
+# logger.disabled = True
 
 
 def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict=dict(), run_gen_map=True,
@@ -21,9 +21,9 @@ def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict
     while (not valid):
         mapspace.reset_mapspace(spatial_config, spatial_configs)
         update_greedy_factor_config(mapspace, invalid_mem_entries, invalid_mem_instances, factor_config)
-        logging.debug("--------------")
-        logging.debug("factor_config: {}".format(factor_config))
-        logging.debug("factor_space_tup: {}".format(mapspace.factor_space_tup))
+        logger.debug("--------------")
+        logger.debug("factor_config: {}".format(factor_config))
+        logger.debug("factor_space_tup: {}".format(mapspace.factor_space_tup))
         mapspace.update_mapspace(perm_config, factor_config)
         valid, invalid_mem_entries, invalid_mem_instances, utilized_mem_entries, utilized_mem_instances = mapspace.valid_check()
 
@@ -32,24 +32,24 @@ def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict
                                      run_gen_map=run_gen_map, run_gen_tc=run_gen_tc, run_sim_test=run_sim_test,
                                      output_path=output_path, spatial_configs=spatial_configs)
 
-        logging.debug("utilized_mem_entries {}".format(utilized_mem_entries))
+        logger.debug("utilized_mem_entries {}".format(utilized_mem_entries))
         utilized_mem_entries_prod = reduce(lambda x, y: float(x) * float(y), utilized_mem_entries[0:-1])
         utilized_mem_entries_sum = reduce(lambda x, y: x + y, utilized_mem_entries[0:-1])
-        logging.debug(
+        logger.debug(
             "utilized_mem_entries sum={}, prod={:e}".format(utilized_mem_entries_sum, utilized_mem_entries_prod))
 
-        logging.debug("timeloop utilized_capacity {}".format(status_dict['utilized_capacity']))
+        logger.debug("timeloop utilized_capacity {}".format(status_dict['utilized_capacity']))
         for idx, utilized_capacity in enumerate(utilized_mem_entries):
             if idx == len(utilized_mem_entries) - 1:
                 continue
             try:
                 assert (utilized_capacity == status_dict['utilized_capacity'][idx])
             except:
-                logging.error("utilized_capacity {}".format(utilized_capacity))
-                logging.error("timeloop utilized_capacity {}".format(status_dict['utilized_capacity']))
+                logger.error("utilized_capacity {}".format(utilized_capacity))
+                logger.error("timeloop utilized_capacity {}".format(status_dict['utilized_capacity']))
                 raise RuntimeError('Schedule passed CoSA valid check but failed Timeloop simulation.')
     else:
-        logging.debug("utilized_mem_entries {}".format(utilized_mem_entries))
+        logger.debug("utilized_mem_entries {}".format(utilized_mem_entries))
     return status_dict
 
 
@@ -87,7 +87,7 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
             if status_dict_val['run_status'][2] == -1:
                 finish_run = False
         if finish_run:
-            logging.info("status_dict: {}".format(status_dict[status_dict_key]))
+            logger.info("status_dict: {}".format(status_dict[status_dict_key]))
             # return
             return status_dict_val
     else:
@@ -103,9 +103,8 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
     mapping = mapspace.generate_mapping()
 
     output_base = pathlib.Path(output_path).resolve()
-    output_dir = output_base
-    # output_dir = output_base / mapspace.arch.config_str() / mapspace.prob.config_str() / mapspace.config_str()[0] / \
-    #             mapspace.config_str()[1]
+    output_dir = output_base / mapspace.arch.config_str() / mapspace.prob.config_str() / mapspace.config_str()[0] / \
+                 mapspace.config_str()[1]
 
     status_dict[status_dict_key]['output_dir'] = str(output_dir)
 
@@ -113,7 +112,7 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
     prefix = 'tc'
 
     map_path = output_dir / 'map_16.yaml'
-    logging.info("map_path: {}".format(map_path))
+    logger.info("map_path: {}".format(map_path))
     xml_file = output_dir / 'timeloop-model.map+stats.xml'
     stats_txt_file = output_dir / 'timeloop-model.stats.txt'
     csv_file = output_dir / "{}.csv".format(prefix)
@@ -121,34 +120,34 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
     stats_file = output_dir / "{}.summary.json".format(prefix)
     status_dict_file = output_dir / "{}.dict.json".format(prefix)
 
-    # logging.debug("status_dict_before: {}".format(status_dict[status_dict_key]))
+    # logger.debug("status_dict_before: {}".format(status_dict[status_dict_key]))
     # generate map 
     if run_gen_map:
-        if map_path.exists() and not xml_file.exists():
+        if map_path.exists() and not stats_txt_file.exists():
             status_dict[status_dict_key]['run_status'][0] = 0
-        elif not xml_file.exists():
-            # logging.info("Run Generate Mapping")
+        elif not stats_txt_file.exists():
+            # logger.info("Run Generate Mapping")
             utils.store_yaml(map_path, mapping)
             success = utils.run_timeloop(mapspace.arch.path, mapspace.prob.path, map_path, cwd=output_dir)
 
             # if passes timeloop check
             if not success:
                 status_dict[status_dict_key]['run_status'][0] = 0
-                logging.info("\tInvalid Mapping Detected!")
+                logger.info("\tInvalid Mapping Detected!")
                 if delete_invalid:
                     shutil.rmtree(
                         output_base / mapspace.arch.config_str() / mapspace.prob.config_str() / mapspace.config_str()[
                             0])
                 return status_dict[status_dict_key]
             else:
-                # logging.info("\tValid Mapping Detected!")
+                # logger.info("\tValid Mapping Detected!")
                 assert (xml_file.exists())
                 status_dict[status_dict_key]['run_status'][0] = 1
         else:
             status_dict[status_dict_key]['run_status'][0] = 1
 
         # Parse buffer util
-        if xml_file.exists():
+        if stats_txt_file.exists():
             subnest_info = get_subnest_info(xml_file)
             bufsize = subnest_info['bufsize']
             pe_cycle = subnest_info['pe_cycle']
@@ -168,7 +167,7 @@ def run_simulation(mapspace, spatial_config, perm_config, factor_config, status_
             area = utils.get_area_stats(stats_txt_file)
             status_dict[status_dict_key]['area'] = area
 
-    logging.info("Status: {}".format(status_dict[status_dict_key]))
+    logger.info("Status: {}".format(status_dict[status_dict_key]))
     utils.store_json(status_dict_file, status_dict, indent=4)
     return status_dict[status_dict_key]
 

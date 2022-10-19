@@ -11,7 +11,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # capture everything
 # logger.disabled = True
 
-import run_config
+import run_config, utils
 from cosa_constants import _A, _B
 from cosa_input_objs import Prob, Arch, Mapspace
 from gurobipy import *
@@ -32,7 +32,7 @@ def construct_argparser():
                         '--arch_path',
                         type=str,
                         help='Hardware Architecture Path',
-                        default=f'{_COSA_DIR}/gemmini/arch/arch_cosa.yaml',
+                        default=f'{_COSA_DIR}/gemmini/arch/arch.yaml',
                         )
     parser.add_argument('-mp',
                         '--mapspace_path',
@@ -46,6 +46,13 @@ def construct_argparser():
                         help='Problem Dimension Path',
                         default=f'{_COSA_DIR}/configs/workloads/resnet50_graph/_outputs_input.2.yaml',
                         )
+    parser.add_argument('-omap',
+                        '--output_mapper_yaml_path',
+                        type=str,
+                        help='Output Mapping/Mapper Path',
+                        default=None,
+                        )
+
     return parser
 
 
@@ -110,7 +117,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                traffic_factor=1):
     """CoSA mixed integer programming(MIP) formulation."""
 
-    logging.info(f"LAYER {f}")
+    logger.info(f"LAYER {f}")
 
     num_vars = len(A[0])
     num_mems = len(Z[0])
@@ -155,7 +162,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     dram_start_level = 3
 
     total_levels = num_mems - 1 + perm_levels
-    logging.info(f"total {total_levels} levels")
+    logger.info(f"total {total_levels} levels")
 
     x = {}  # x_jn_jn
     
@@ -428,10 +435,10 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
 
     result_dict = {}
     for variable in m.getVars():
-        # logging.debug("Variable %s: Value %s" % (variable.varName, variable.x))
+        # logger.debug("Variable %s: Value %s" % (variable.varName, variable.x))
         assert (variable.varName not in result_dict)
         result_dict[variable.varName] = variable.x
-    logging.debug('Obj: %g' % m.objVal)
+    logger.debug('Obj: %g' % m.objVal)
 
     all_x = np.zeros((total_levels, perm_levels, 2))
     for i in range(total_levels):
@@ -461,7 +468,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                 if val == 1:
                     var_outer_perm_config[i - dram_start_level] = j
                 level_idx += 1
-    logging.info(f'var_outer_perm_config: {var_outer_perm_config}')
+    logger.info(f'var_outer_perm_config: {var_outer_perm_config}')
 
     y_arr = np.zeros((num_vars, perm_levels))
     for v in range(num_vars):
@@ -480,14 +487,14 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
         if i not in merge_outer_perm_config:
             merge_outer_perm_config.append(i)
 
-    logging.info("var idx as the value {}".format(var_outer_perm_config))
-    logging.info("merged var idx as the value {}".format(merge_outer_perm_config))
+    logger.info("var idx as the value {}".format(var_outer_perm_config))
+    logger.info("merged var idx as the value {}".format(merge_outer_perm_config))
 
     outer_perm_config = [1] * len(f)
     for i, var in enumerate(merge_outer_perm_config):
         outer_perm_config[var] = i
 
-    logging.info("ordering idx as the value {}".format(outer_perm_config))
+    logger.info("ordering idx as the value {}".format(outer_perm_config))
 
     # init factor_config 
     # DRAM is the last level
@@ -546,14 +553,14 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                         if k == 0:
                             spatial_config[j][n] = 1
 
-    logging.info(f"prime factors: {f}")
-    logging.info(f"factor configs: {factor_config}")
-    logging.info(f"spatial configs: {spatial_config}")
+    logger.info(f"prime factors: {f}")
+    logger.info(f"factor configs: {factor_config}")
+    logger.info(f"spatial configs: {spatial_config}")
 
     return (factor_config, spatial_config, outer_perm_config, milp_runtime)
 
 
-def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
+def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper_yaml_path=None):
     # init
     status_dict = {}
     prob = Prob(prob_path)
@@ -588,7 +595,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
         if val > 1:
             spatial_to_factor_map[i] = idx
             idx += 1
-    logging.info(f'spatial_to_factor_map: {spatial_to_factor_map}')
+    logger.info(f'spatial_to_factor_map: {spatial_to_factor_map}')
 
     for j, f_j in enumerate(prob.prob_factors):
         for n, f_jn in enumerate(f_j):
@@ -597,7 +604,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
                 idx = factor_config[j][n]
                 update_factor_config[j][n] = spatial_to_factor_map[idx]
 
-    logging.info(f'update_factor_config: {update_factor_config}')
+    logger.info(f'update_factor_config: {update_factor_config}')
     perm_config = mapspace.get_default_perm()
     perm_config[1] = outer_perm_config
     print(f'spatial_to_factor_map: {spatial_to_factor_map}')
@@ -609,9 +616,12 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
         results = run_config.run_config(mapspace, None, perm_config, update_factor_config, status_dict,
                                         run_gen_map=True, run_gen_tc=False, run_sim_test=False, output_path=output_path,
                                         spatial_configs=spatial_configs, valid_check=False, outer_loopcount_limit=100)
-        logging.info(f'status_dict: {status_dict}')
+        logger.info(f'status_dict: {status_dict}')
+        if output_mapper_yaml_path is not None:
+            mapping = mapspace.generate_mapping(for_mapper=True)
+            utils.store_yaml(output_mapper_yaml_path, mapping)
     except:
-        logging.error('Error: invalid schedule.')
+        logger.error('Error: invalid schedule.')
         raise
 
     return status_dict
@@ -625,5 +635,9 @@ if __name__ == "__main__":
     arch_path = pathlib.Path(args.arch_path).resolve()
     mapspace_path = pathlib.Path(args.mapspace_path).resolve()
     output_path = args.output_dir
+    if args.output_mapper_yaml_path is not None:
+        output_mapper_yaml_path = pathlib.Path(args.output_mapper_yaml_path)
+    else:
+        output_mapper_yaml_path = None 
 
-    run_timeloop(prob_path, arch_path, mapspace_path, output_path)
+    run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper_yaml_path)
