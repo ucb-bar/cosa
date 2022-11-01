@@ -29,23 +29,36 @@ architecture:
           word-bits: 8
           n_rdwr_ports: 1
           n_banks: 4
+      - name: Accumulator
+        class: SRAM
+        attributes:
+          entries: 16384
+          depth: 1024
+          width: 512
+          instances: 1
+          word-bits: 32
+          network-word-bits: 16
+          n_rdwr_ports: 2
+          n_banks: 2
       subtree:
-      - name: Subchip
+      - name: PECols[0..15]
         local:
-        - name: Accumulator
+        - name: AccumulatorExceptSpatialK
           class: SRAM
           attributes:
-            entries: 16384
+            vector-access-energy: 0
+            entries: 1024 # acc size / pe_dim = 16384/16
             depth: 1024
-            width: 512
-            instances: 1
-            meshX: 1
+            width: 32
+            instances: 16
+            # meshX: 16
             word-bits: 32
             network-word-bits: 16
+            # cluster-size: 16
             n_rdwr_ports: 2
             n_banks: 2
         subtree:
-        - name: PE[0..255]
+        - name: PERows[0..15]
           local:
           - name: Registers
             class: SRAM
@@ -53,8 +66,10 @@ architecture:
               depth: 1
               width: 8
               entries: 1
+              instances: 256
               # meshX: 16
               word-bits: 8
+              # cluster-size: 16
               n_rdwr_ports: 2
               n_banks: 1
           - name: MACC

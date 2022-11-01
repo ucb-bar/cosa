@@ -8,7 +8,7 @@ import time
 import numpy as np
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  # capture everything
+logger.setLevel(logging.INFO)  # capture everything
 # logger.disabled = True
 
 import run_config, utils
@@ -79,7 +79,7 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
 
     Returns: 
         factor_config: A 2d array specifying the allocation decision for each prime factor.
-        spatial_config: A 2d array specifying the temporal/spatial decisions for each prime factor.
+        spatial_config: A 2d array specifying the temporal/spatial decisions for each prime factor.ccumulatorExceptSpatialK
         perm_config: A 2d array specifyng the ordering of R,S,P,Q,C,K,N factors at each level.  
         run_time: Time-to-solution of CoSA.
     """
@@ -107,7 +107,7 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
             m.Params.LogToConsole = 0
             m.Params.OutputFlag = 0
             factor_config, spatial_config, outer_perm_config, run_time = mip_solver(m, prime_factors, strides, arch, part_ratios,
-                                                                            global_buf_idx=1, A=_A, Z=Z,
+                                                                            global_buf_idx=3, A=_A, Z=Z,
                                                                             compute_factor=10, util_factor=-0.1,
                                                                             traffic_factor=1)
     return factor_config, spatial_config, outer_perm_config, run_time
@@ -159,7 +159,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     for j, f_j in enumerate(f):
         perm_levels += len(f_j)
     gb_start_level = global_buf_idx
-    dram_start_level = 3
+    dram_start_level = 4
 
     total_levels = num_mems - 1 + perm_levels
     logger.info(f"total {total_levels} levels")
@@ -167,7 +167,10 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     x = {}  # x_jn_jn
     
     # Add problem dim that can be mapped to the systolic array 
-    valid_dim = [4,5] # CK 
+    # valid_dim = [[],[4],[5],[],[]] # CK 
+    valid_dim = [[],] * total_levels
+    valid_dim[1] = [4]
+    valid_dim[2] = [5]
     for i in range(total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
@@ -176,7 +179,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                     x[(i, j, n, k)] = m.addVar(vtype=GRB.BINARY, name=name)
                 # sum for each sub factor spatial and temp must be less than 1 
                 # NOT equals to one
-                if j not in valid_dim: 
+                if j not in valid_dim[i]: 
                     m.addConstr(x[(i, j, n, 0)] == 0, "spatial_invalid_{}_{}_{}".format(i, j, n))
 
                 spatial_temp_sum = 0
@@ -582,10 +585,11 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
     part_ratios = [
         [1, 0, 0],
         [0, 0, 1],
+        [0, 0, 1],
         [0.5, 0.5, 0],
         [0.33, 0.33, 0.33],
     ]
-    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=1,
+    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=3,
                                                                       Z=Z)
 
     update_factor_config = factor_config

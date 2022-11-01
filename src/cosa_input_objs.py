@@ -113,7 +113,7 @@ class Arch(object):
 
         # arch config version, please add a postfix _v3 to
         # the yaml filename if a new version is used
-        version = 'v3' # if '_v3' in self.path.name else 'v1'
+        version = 'v3_1' # if '_v3' in self.path.name else 'v1'
 
         # mem instance size for each 
         self.mem_instances = []
@@ -135,58 +135,21 @@ class Arch(object):
                 self.mem_instances.append(mem['instances'])
                 if i < len(self.storage) - 1:
                     self.mem_entries.append(mem['entries'])
-        elif version == 'v3':
+
+        elif version == 'v3_0':
             self.dram = arch_dict['architecture']['subtree'][0]['local'][0]
             self.global_buf = arch_dict['architecture']['subtree'][0]['subtree'][0]['local'][0]
             self.pe_buf = arch_dict['architecture']['subtree'][0]['subtree'][0]['subtree'][0]['local']
             idx = 0
 
-            if (len(self.pe_buf)) > 1:
-                # for backward compatibility to the simba_v3 yaml files
-                for i, mem in enumerate(self.pe_buf[::-1]):
-                    if mem['class'] == 'SRAM' or mem['class'] == 'regfile':
-                        self.mem_idx[mem['name']] = idx
-                        self.mem_name[idx] = mem['name']
-                        self.mem_instances.append(mem['attributes']['instances'])
-                        self.mem_entries.append(mem['attributes']['entries'])
-                        idx += 1
-            else:
-                def iter_local(buf_level, mem_names, mem_instances, mem_entries, fanout):
-                    for mem in buf_level['local']:
-                        if mem['class'] == 'SRAM' or mem['class'] == 'regfile':
-                            mem_names.append(mem['name'])
-                            # if 'instances' in mem['attributes']:
-                            #   mem_instances.append(mem['attributes']['instances'])
-                            mem_entries.append(mem['attributes']['entries'])
-                            mem_instances.append(fanout)
-
-
-                # parse all hierarchical simba definition
-                mem_names  = []
-                def iter_subtree(buf_level, mem_names, mem_instances, mem_entries, fanout):
-                    # - name: VectorArray[0..7] for 8 vecto
-                    m = re.match(r"\w+\[0\.\.(\d+)\]", buf_level['name'])
-                    if m:
-                        cur_fanout = int(m.group(1)) + 1
-                    else:
-                        cur_fanout = 1
-                    fanout = cur_fanout * fanout
-
-                    iter_local(buf_level, mem_names, mem_instances, mem_entries, fanout)
-                    if 'subtree' in buf_level.keys():
-                        iter_subtree(buf_level['subtree'][0], mem_names, mem_instances, mem_entries, fanout)
-
-                pe_buf_level = arch_dict['architecture']['subtree'][0]['subtree'][0]['subtree'][0]
-                iter_subtree(pe_buf_level, mem_names, self.mem_instances, self.mem_entries, fanout=1)
-                mem_names.reverse()
-                for name in mem_names:
-                    self.mem_idx[name] = idx
-                    self.mem_name[idx] = name
+            # for backward compatibility to the simba_v3 yaml files
+            for i, mem in enumerate(self.pe_buf[::-1]):
+                if mem['class'] == 'SRAM' or mem['class'] == 'regfile':
+                    self.mem_idx[mem['name']] = idx
+                    self.mem_name[idx] = mem['name']
+                    self.mem_instances.append(mem['attributes']['instances'])
+                    self.mem_entries.append(mem['attributes']['entries'])
                     idx += 1
-
-                self.mem_instances.reverse()
-                self.mem_entries.reverse()
-
             self.mem_idx[self.global_buf['name']] = idx
             self.mem_name[idx] = self.global_buf['name']
 
@@ -202,6 +165,51 @@ class Arch(object):
                 raise ValueError("DRAM specification not supported.")
 
             self.mem_instances.append(1)
+            self.arch = {"instances": self.mem_instances, "entries": self.mem_entries}
+
+        elif version == 'v3_1':
+            self.dram = arch_dict['architecture']['subtree'][0]['local'][0]
+            self.global_buf = arch_dict['architecture']['subtree'][0]['subtree'][0]['local'][0]
+            self.pe_buf = arch_dict['architecture']['subtree'][0]['subtree'][0]['subtree'][0]['local']
+            idx = 0
+
+            def iter_local(buf_level, mem_names, mem_instances, mem_entries, fanout):
+                for mem in buf_level['local']:
+                    if mem['class'] == 'SRAM' or mem['class'] == 'regfile' or mem['class'] == 'DRAM':
+                        mem_names.append(mem['name'])
+                        # if 'instances' in mem['attributes']:
+                        #   mem_instances.append(mem['attributes']['instances'])
+                        mem_instances.append(fanout)
+                        if mem['class'] != 'DRAM':
+                            mem_entries.append(mem['attributes']['entries'])
+
+
+            # parse all hierarchical simba definition
+            mem_names  = []
+            def iter_subtree(buf_level, mem_names, mem_instances, mem_entries, fanout):
+                # - name: VectorArray[0..7] for 8 vecto
+                m = re.match(r"\w+\[0\.\.(\d+)\]", buf_level['name'])
+                if m:
+                    cur_fanout = int(m.group(1)) + 1
+                else:
+                    cur_fanout = 1
+                fanout = cur_fanout * fanout
+
+                iter_local(buf_level, mem_names, mem_instances, mem_entries, fanout)
+                if 'subtree' in buf_level.keys():
+                    iter_subtree(buf_level['subtree'][0], mem_names, mem_instances, mem_entries, fanout)
+
+            pe_buf_level = arch_dict['architecture']['subtree'][0]
+            iter_subtree(pe_buf_level, mem_names, self.mem_instances, self.mem_entries, fanout=1)
+            mem_names.reverse()
+            for name in mem_names:
+                self.mem_idx[name] = idx
+                self.mem_name[idx] = name
+                idx += 1
+
+            self.mem_instances.reverse()
+            self.mem_entries.reverse()
+
             self.arch = {"instances": self.mem_instances, "entries": self.mem_entries}
         self.mem_levels = len(self.mem_idx.items())
         self.S = self.gen_spatial_constraint()
@@ -265,7 +273,7 @@ class Mapspace(object):
 
         # parse bypass info
         for constraint in self.constraints:
-            if constraint['type'] == 'datatype':
+            if constraint['type'] == 'datatype' or constraint['type'] == 'bypass':
                 mem_idx = arch.mem_idx[constraint['target']]
                 bypass_vars = constraint['bypass']
                 if bypass_vars is not None:

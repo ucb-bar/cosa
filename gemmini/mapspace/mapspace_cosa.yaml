@@ -1,28 +1,35 @@
 mapspace:
   constraints:
   - target: Registers
-    type: datatype
+    type: bypass
     bypass:
     - Outputs
     - Inputs
     keep:
     - Weights
   - target: Accumulator
-    type: datatype
+    type: bypass
+    bypass:
+    - Weights
+    - Inputs
+    keep:
+    - Outputs
+  - target: AccumulatorExceptSpatialK
+    type: bypass
     bypass:
     - Weights
     - Inputs
     keep:
     - Outputs
   - target: Scratchpad
-    type: datatype
+    type: bypass
     keep:
     - Inputs
     - Weights
     bypass:
     - Outputs
   - target: DRAM
-    type: datatype
+    type: bypass
     keep:
     - Weights
     - Inputs
