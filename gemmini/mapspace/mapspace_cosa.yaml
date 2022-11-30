@@ -14,13 +14,6 @@ mapspace:
     - Inputs
     keep:
     - Outputs
-  - target: AccumulatorExceptSpatialK
-    type: bypass
-    bypass:
-    - Weights
-    - Inputs
-    keep:
-    - Outputs
   - target: Scratchpad
     type: bypass
     keep:

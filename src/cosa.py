@@ -107,7 +107,7 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
             m.Params.LogToConsole = 0
             m.Params.OutputFlag = 0
             factor_config, spatial_config, outer_perm_config, run_time = mip_solver(m, prime_factors, strides, arch, part_ratios,
-                                                                            global_buf_idx=3, A=_A, Z=Z,
+                                                                            global_buf_idx=global_buf_idx, A=_A, Z=Z,
                                                                             compute_factor=10, util_factor=-0.1,
                                                                             traffic_factor=1)
     return factor_config, spatial_config, outer_perm_config, run_time
@@ -159,7 +159,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     for j, f_j in enumerate(f):
         perm_levels += len(f_j)
     gb_start_level = global_buf_idx
-    dram_start_level = 4
+    dram_start_level = 3
 
     total_levels = num_mems - 1 + perm_levels
     logger.info(f"total {total_levels} levels")
@@ -585,11 +585,10 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
     part_ratios = [
         [1, 0, 0],
         [0, 0, 1],
-        [0, 0, 1],
         [0.5, 0.5, 0],
         [0.33, 0.33, 0.33],
     ]
-    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=3,
+    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=2,
                                                                       Z=Z)
 
     update_factor_config = factor_config
