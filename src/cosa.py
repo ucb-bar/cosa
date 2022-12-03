@@ -7,17 +7,20 @@ import time
 
 import numpy as np
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)  # capture everything
-# logger.disabled = True
+# logger = logging.getLogger()
+# logger.setLevel(logging.DEBUG)  # capture everything
+# logger.disabled = False
 
 import run_config, utils
 from cosa_constants import _A, _B
 from cosa_input_objs import Prob, Arch, Mapspace
 from gurobipy import *
+from utils import logger
+# logger.setLevel(logging.NOTSET)  # capture everything
+#logger.setLevel(logging.DEBUG)  # capture everything
+# logger.disabled = False
 
 _COSA_DIR = os.environ['COSA_DIR']
-logger.disabled = False
 
 
 def construct_argparser():
@@ -32,7 +35,7 @@ def construct_argparser():
                         '--arch_path',
                         type=str,
                         help='Hardware Architecture Path',
-                        default=f'{_COSA_DIR}/gemmini/arch/arch.yaml',
+                        default=f'{_COSA_DIR}/gemmini/arch/arch_debug.yaml',
                         )
     parser.add_argument('-mp',
                         '--mapspace_path',
@@ -44,7 +47,8 @@ def construct_argparser():
                         '--prob_path',
                         type=str,
                         help='Problem Dimension Path',
-                        default=f'{_COSA_DIR}/configs/workloads/resnet50_graph/_outputs_input.2.yaml',
+                        default=f'{_COSA_DIR}/gemmini/prob/prob_debug.yaml',
+                        # default=f'{_COSA_DIR}/configs/workloads/resnet50_graph/_outputs_input.2.yaml',
                         )
     parser.add_argument('-omap',
                         '--output_mapper_yaml_path',
@@ -169,8 +173,8 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     # Add problem dim that can be mapped to the systolic array 
     # valid_dim = [[],[4],[5],[],[]] # CK 
     valid_dim = [[],] * total_levels
-    valid_dim[1] = [4]
-    valid_dim[2] = [5]
+    valid_dim[1] = [4] # C
+    valid_dim[2] = [5] # K
     for i in range(total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
@@ -179,7 +183,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                     x[(i, j, n, k)] = m.addVar(vtype=GRB.BINARY, name=name)
                 # sum for each sub factor spatial and temp must be less than 1 
                 # NOT equals to one
-                if j not in valid_dim[i]: 
+                if j not in valid_dim[i]:
                     m.addConstr(x[(i, j, n, 0)] == 0, "spatial_invalid_{}_{}_{}".format(i, j, n))
 
                 spatial_temp_sum = 0
@@ -396,11 +400,10 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
             factor = 1.01
         else:
             factor = 1
-
         total_traffic += 0.99 * data_size[v] + 0.99 * spatial_cost[v] + gb_traffic[v] + dram_traffic[v] * factor
 
     # ========================== user-defined objective function ========================== #
-    cosa_obj = total_util * util_factor + total_compute * compute_factor + total_traffic * traffic_factor
+    cosa_obj = total_util * util_factor + total_compute * compute_factor # + total_traffic * traffic_factor
 
     max_it = m.addVar(vtype=GRB.CONTINUOUS, name="max_it")
     its = []
@@ -585,7 +588,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
     part_ratios = [
         [1, 0, 0],
         [0, 0, 1],
-        [0.5, 0.5, 0],
+        [1, 1, 0],
         [0.33, 0.33, 0.33],
     ]
     factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=2,

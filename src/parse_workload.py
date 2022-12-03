@@ -8,12 +8,8 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 import utils
-from utils import OrderedDefaultdict
+from utils import OrderedDefaultdict, logger
 
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.NOTSET)  # capture everything
-# logger.setLevel(logging.) # capture everything
-# logger.disabled = True
 
 all_var_names = ["Weights", "Inputs", "Outputs"]
 

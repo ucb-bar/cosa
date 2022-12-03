@@ -6,9 +6,7 @@ from functools import reduce
 import utils
 from parse_workload import *
 
-logger = logging.getLogger(__name__)
-#logger.setLevel(logger.NOTSET)  # capture everything
-# logger.disabled = True
+from utils import logger
 
 
 def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict=dict(), run_gen_map=True,

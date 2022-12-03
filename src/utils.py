@@ -16,8 +16,10 @@ from time import strftime, gmtime
 import numpy as np
 import yaml
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.NOTSET)  # capture everything
+
+format="[%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(funcName)s] %(message)s"
+logging.basicConfig(format=format, level=logging.NOTSET)
+logger = logging.getLogger()
 logger.disabled = True
 
 
