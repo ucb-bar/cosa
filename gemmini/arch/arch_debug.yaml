@@ -1,0 +1,60 @@
+architecture:
+  subtree:
+  - local:
+    - attributes:
+        block_size: 64
+        instances: 1
+        shared_bandwidth: 5.75
+        word-bits: 8
+      class: DRAM
+      name: DRAM
+    name: System
+    subtree:
+    - attributes:
+        technology: 40nm
+      local:
+      - attributes:
+          depth: 80
+          entries: 5120
+          instances: 1
+          meshX: 1
+          n_banks: 1
+          n_rdwr_ports: 1
+          width: 512
+          word-bits: 8
+        class: SRAM
+        name: Scratchpad
+      name: Chip
+      subtree:
+      - local:
+        - attributes:
+            depth: 16
+            entries: 16
+            instances: 64
+            n_banks: 2
+            n_rdwr_ports: 2
+            network-word-bits: 16
+            width: 32
+            word-bits: 32
+          class: SRAM
+          name: Accumulator
+        name: PECols[0..63]
+        subtree:
+        - local:
+          - attributes:
+              depth: 1
+              entries: 1
+              instances: 4096
+              n_banks: 1
+              n_rdwr_ports: 2
+              width: 8
+              word-bits: 8
+            class: SRAM
+            name: Registers
+          - attributes:
+              datawidth: 8
+              word-bits: 8
+            class: intmac
+            name: MACC
+          name: PERows[0..63]
+  version: 0.3
