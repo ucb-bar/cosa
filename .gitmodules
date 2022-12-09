@@ -1,0 +1,4 @@
+[submodule "src/nocsim/matchlib"]
+	path = src/nocsim/matchlib
+	url = git@github.com:NVlabs/matchlib.git
+	branch = hybrid_router
