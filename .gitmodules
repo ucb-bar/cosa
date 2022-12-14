@@ -2,3 +2,6 @@
 	path = src/nocsim/matchlib
 	url = git@github.com:NVlabs/matchlib.git
 	branch = hybrid_router
+[submodule "src/nocsim/DRAMSim2"]
+	path = src/nocsim/sim/DRAMSim2
+	url = https://github.com/umd-memsys/DRAMSim2.git
