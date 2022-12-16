@@ -1,3 +1,5 @@
+#!/usr/bin/env python3 
+import argparse
 import xml.etree.ElementTree as ET
 import logging
 import pathlib
@@ -13,6 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.NOTSET) 
 logger.disabled = True
 
+
 all_var_names = ["Weights", "Inputs", "Outputs"]
 var_dep = {
     "Weights" : [],
@@ -26,6 +29,21 @@ var_bits = {
     "Outputs" : 24, 
     "Outputs_Store" : 24 
         }
+
+def construct_argparser():
+    parser = argparse.ArgumentParser(description='Run Configuration')
+    parser.add_argument('-o',
+                        '--output_csv',
+                        type=str,
+                        help='Output CSV file',
+                        default='output_csv',
+                        )
+    parser.add_argument('-i',
+                        '--input_xml',
+                        type=str,
+                        help='input_xml',
+                        )
+    return parser
 
 #
 #   shape: cnn-layer
@@ -97,13 +115,12 @@ def get_summary_info(stats_file):
     with open(stats_file, 'r') as f:
         lines = f.readlines()
     for line in lines:
-        #m = re.match(r"Energy: (.*) uJ", line)
-        m = re.match(r"Total topology energy: (.*) pJ", line)
+        m = re.match(r"Energy: (.*) uJ", line)
         if m:
             energy = m.group(1)
             summary['energy'] = float(energy)
         else:
-            m = re.match(r"Max topology cycles: (.*)", line)
+            m = re.match(r"Cycles: (.*)", line)
             if m:
                 cycle = m.group(1)
                 summary['cycle'] = int(cycle)
@@ -631,7 +648,10 @@ def new_generate_temp(temporal_loops, iter_start_dim, partial_sum_dep_prob_idx):
 if __name__ == "__main__":
     module_name = os.path.basename(__file__).replace(".py", "")
     utils.setup_logging(module_name, logger)  
-    xml_file = "timeloop-model.map+stats.xml"
+    parser = construct_argparser()
+    args = parser.parse_args()
+
+    # note that the input should be map+stats.xml and timeloop-model.stats.txt file
+    xml_file = pathlib.Path(args.input_xml).resolve()
     subnest_info = get_subnest_info(xml_file);
-    print(subnest_info)
     schedule = gen_schedule(subnest_info, start_level=4, end_level=5)
