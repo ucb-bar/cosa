@@ -157,12 +157,9 @@ def get_subnest_info(xml_file):
     root = tree.getroot()
     
     timeloop_dict = xml2dict(root)
-    #print(timeloop_dict)
 
-    #print(timeloop_dict['boost_serialization']['best_mapped_engine']['topology_']['levels_']['item'])
     arch = timeloop_dict['boost_serialization']['engine']['topology_']['levels_']['item']
     arith = arch[0] 
-    #print(arith['px']['@class_name'])
     subnest_info['pe_cycle'] = int(arith['px']['cycles_']) 
     subnest_info['pe_energy'] = float(arith['px']['energy_'])
 
