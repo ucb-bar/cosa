@@ -1,3 +1,5 @@
+#!/usr/bin/env python3 
+import argparse
 import logging
 import math
 import collections 
@@ -8,10 +10,26 @@ from utils import dict_append_val
 from parse_workload import *
 
 rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.DEBUG) # capture everything
-rootLogger.disabled = True
+# rootLogger.setLevel(logging.DEBUG) # capture everything
+# rootLogger.disabled = True
 
-prefix = 'nb'
+
+def construct_argparser():
+    parser = argparse.ArgumentParser(description='Run Configuration')
+    parser.add_argument('-o',
+                        '--output',
+                        type=str,
+                        help='Output file path',
+                        default='output',
+                        )
+    parser.add_argument('-i',
+                        '--input_xml',
+                        type=str,
+                        help='input_xml',
+                        default='timeloop-model.map+stats.xml',
+                        )
+    return parser
+
 
 # Let each TC only specify the Input and Output var and taking 
 class Variable(object):
@@ -23,18 +41,42 @@ class Variable(object):
         self.srcs = srcs
         self.dests = dests
 
+class Struct(object):
+    def __init__(self, var_name, datawidth, entries):
+        self.var_name = var_name
+        self.datawidth = datawidth
+        self.entries = entries
+
+
+_struct_dict = {}
+
 
 class TC(object): 
     """ Definition of each transaction"""
-    def __init__(self, tc_id, actor_id, op, deps, annotation=""):
+    def __init__(self, tc_id, actor_id, op, deps, tensor_name, entries, annotation=""):
         self.tc_id = tc_id
         self.actor_id = actor_id
         self.op = op
-        self.size = 0
+        self.size = 0 # number of packets
         self.deps = deps
         self.srcs = [actor_id]
         self.dests = []
         self.annotation = annotation
+        self.tensor_name = tensor_name
+        self.entries = 0
+        self.datawidth = 0
+        self.datastruct = None
+        
+        if op != COUNT:
+            self.entries = entries # number of data items 
+            self.datawidth = var_bits[tensor_name]
+            struct_dict_key = (tensor_name, self.datawidth, entries) 
+            if struct_dict_key in _struct_dict.keys():
+                self.datastruct = _struct_dict[struct_dict_key] 
+            else:
+                new_struct = Struct(tensor_name, self.datawidth, entries)
+                _struct_dict[struct_dict_key] = new_struct
+                self.datastruct = new_struct
 
     def create_unicast(self, dest, size):
         self.create_multicast([dest], size)
@@ -66,6 +108,11 @@ class TC(object):
                 )
         return csv_str
          
+
+class TCEncoder(JSONEncoder):
+        def default(self, o):
+            return o.__dict__
+
 
 class NoC(object): 
     """ Definition of each NoC"""
@@ -180,18 +227,20 @@ class TC_Generator(object):
         #print(sep_hops)
         return len(path_set)
 
-    def unicast(self, size, src, dest, deps, var): 
+    def unicast(self, tensor_name, size, src, dest, deps, var): 
         """ 
         Send data from src to dest
-            size - data size in bit 
+            tensor_name - name of the tensor not variable with id 
+            size - data size in bit = datawidth * # of entries
             deps - list of depedent tc ids 
             var - output var to produce by this func
         """
         dep_tcs = []
 
         num_packets = (size - 1) // packet_size + 1
+        entries = size // var_bits[tensor_name]
         annotation = "{}: unicast from {} to {} dep on {}, {} bits in {} packets".format(var, src, dest, deps, size, num_packets)
-        tc = TC(self.tc_id, src, UNICAST, deps, annotation)
+        tc = TC(self.tc_id, src, UNICAST, deps, tensor_name, entries, annotation)
         tc.create_unicast(dest, num_packets)
         dep_tcs.append(self.tc_id)
         self.tcs.append(tc)
@@ -206,9 +255,10 @@ class TC_Generator(object):
 
         self.tc_id += 1
 
-    def multicast(self, size, src, dests, deps, var):
+    def multicast(self, tensor_name, size, src, dests, deps, var):
         """ 
         Send data from src to dests
+            tensor_name - name of the tensor not variable with id 
             size - data size in bit 
             deps - list of depedent tc ids 
             var - output var to produce by this func
@@ -216,6 +266,7 @@ class TC_Generator(object):
         dep_tcs = []
 
         num_packets = (size - 1) // packet_size + 1
+        entries = size // var_bits[tensor_name]
         # TODO assume data is of multiple packet size
         # rem_size = size 
         # while(rem_size > 0):
@@ -225,7 +276,7 @@ class TC_Generator(object):
         #         send_size = rem_size
         #     rem_size = rem_size - send_size
         annotation = "{}: multicast from {} to {} dep on {}, {} bits in {} packets".format(var, src, dests, deps, size, num_packets)
-        tc = TC(self.tc_id, src, MULTICAST, deps, annotation)
+        tc = TC(self.tc_id, src, MULTICAST, deps, tensor_name, entries, annotation)
         tc.create_multicast(dests, num_packets)
         dep_tcs.append(self.tc_id)
         self.tcs.append(tc)
@@ -238,17 +289,18 @@ class TC_Generator(object):
             self.multicast_hops += hops + num_packets * packet_size // flit_size
         self.tc_id += 1
     
-    def gather(self, size, srcs, dest, deps, var):
+    def gather(self, tensor_name, size, srcs, dest, deps, var):
         """ 
         Gather data from srcs to dest
+            tensor_name - name of the tensor not variable with id 
             size - data size in bit 
             deps - list of depedent tc ids 
             var - output var to produce by this func
         """
         dep_tcs = []
-
+        entries = size // var_bits[tensor_name]
         for i, src in enumerate(srcs): 
-            self.unicast(size, src, dest, deps, var+'_'+str(i))
+            self.unicast(tensor_name, size, src, dest, deps, var+'_'+str(i))
             deps = self.get_deps([var+'_'+str(i)])
             dep_tcs.extend(deps)
         self.write_deps[var] = dep_tcs
@@ -256,13 +308,14 @@ class TC_Generator(object):
     def count(self, size, src, deps, var): 
         """ 
         Run PE counters on src
+            size - number of cycles
             deps - list of depedent tc ids 
             var - output var to produce by this func
         """
         dep_tcs = []
 
         annotation = "{}: {} count {} cycles dep on {}".format(var, src, size, deps)
-        tc = TC(self.tc_id, src, COUNT, deps, annotation)
+        tc = TC(self.tc_id, src, COUNT, deps, "", 0, annotation)
         tc.create_count(size)
         dep_tcs.append(self.tc_id)
         self.tcs.append(tc)
@@ -312,17 +365,23 @@ class TC_Generator(object):
             deps.extend(self.write_deps[var])
         return deps
     
-    def to_file(self, csv_file): 
-        csv_str = "\n".join( tc.format_csv() for tc in self.tcs) 
-        with open(csv_file, 'w') as f:
-            f.write(csv_str)
-
+    def to_file(self, out_file): 
+        if out_file.suffix == '.csv':
+            csv_str = "\n".join( tc.format_csv() for tc in self.tcs) 
+            with open(out_file, 'w') as f:
+                f.write(csv_str)
+        elif out_file.suffix == '.json':
+            with open(out_file, "w") as f:
+                json.dump(self.tcs, f, indent=" ", cls=TCEncoder)
+        else:
+            raise("Not supported output file format!")
+             
 
 # Construct unicast for PEs accessing different addr 
 # Construct broadcast for PEs accessing the same addr 
 # pe_dep_vars specifies the dep_vars that the dst matches the current pe
 # dep_vars specifies the dep_vars that just var name matches 
-def construct_send_reqs(var_name, tc, buf, data_size, pe_dep_vars, dep_vars=[], mem_port=None):
+def construct_send_reqs(var_name, tc, buf, tensor_name, data_size, pe_dep_vars, dep_vars=[], mem_port=None):
 
     if mem_port is None:
         mem_port = tc.noc.globalbuf_port
@@ -339,7 +398,7 @@ def construct_send_reqs(var_name, tc, buf, data_size, pe_dep_vars, dep_vars=[], 
             deps.extend(tc.get_deps(dep_vars)) 
 
             output_var = var_name+"__req_send_unicast_"+str(pe)
-            tc.unicast(data_size, mem_port, pe, deps, output_var)
+            tc.unicast(tensor_name, data_size, mem_port, pe, deps, output_var)
             rootLogger.info("\t{0} from Global Memory Port {1} to PE {2}".format(output_var, mem_port, v[0]))
         else: 
             pes = v
@@ -350,7 +409,7 @@ def construct_send_reqs(var_name, tc, buf, data_size, pe_dep_vars, dep_vars=[], 
             deps.extend(tc.get_deps(dep_vars)) 
 
             output_var = var_name+"__req_send_multicast_"+str(pes_str)
-            tc.multicast(data_size, mem_port, pes, deps, output_var)              
+            tc.multicast(tensor_name, data_size, mem_port, pes, deps, output_var)              
             rootLogger.info("\t{0} Global Memory Port {1} to PE {2}".format(output_var, mem_port, v))
 
 
@@ -421,7 +480,7 @@ def serial_reduction(addrs):
                     
 
 # Construct unicast for partial sum reduction 
-def construct_reduce_reqs(var_name, tc, buf, data_size, dep_vars, reduction="xy"):
+def construct_reduce_reqs(var_name, tc, buf, tensor_name, data_size, dep_vars, reduction="xy"):
 
     # construct addrs dict
     addrs = construct_addrs_dict(buf) 
@@ -450,7 +509,7 @@ def construct_reduce_reqs(var_name, tc, buf, data_size, dep_vars, reduction="xy"
         assert(len(dst_pes)==1)
         for dst_pe in dst_pes: 
             output_var = "{0}__req_reduce_unicast_{1}_{2}".format(var_name, src_pe, dst_pe) 
-            tc.unicast(data_size, src_pe, dst_pe, deps, output_var)
+            tc.unicast(tensor_name, data_size, src_pe, dst_pe, deps, output_var)
             rootLogger.info("{}".format(output_var))
             rootLogger.info("\t{0} from PE {1} to PE {2}".format(output_var, src_pe, dst_pe))
 
@@ -477,32 +536,32 @@ def construct_reduce_reqs(var_name, tc, buf, data_size, dep_vars, reduction="xy"
 #                     rootLogger.info("\treq_reduce_{0}_unicast from PE {1} to PE {2}".format(i, pe, v[j+1]))
 
 
-def construct_todram_reqs(var_name, tc, ret_pes, data_size, dep_vars):
+def construct_todram_reqs(var_name, tc, ret_pes, tensor_name, data_size, dep_vars):
     deps = tc.get_deps(dep_vars)
     dest = tc.noc.dram_port
 
     # send to GlobalBuffer from the ret PEs
     for i, pe in enumerate(ret_pes):
         output_var = var_name+"__req_store_unicast_"+str(pe)
-        tc.unicast(data_size, pe, dest, deps, output_var)
+        tc.unicast(tensor_name, data_size, pe, dest, deps, output_var)
         rootLogger.info("\t{0} from PE {1} to DRAM Port {2}".format(output_var, pe, dest))
     
 
-def construct_toglobalbuf_reqs(var_name, tc, ret_pes, data_size, dep_vars):
+def construct_toglobalbuf_reqs(var_name, tc, ret_pes, tensor_name, data_size, dep_vars):
     deps = tc.get_deps(dep_vars)
     dest = tc.noc.globalbuf_port
 
     # send to GlobalBuffer from the ret PEs
     for i, pe in enumerate(ret_pes):
         output_var = var_name+"__req_store_unicast_"+str(pe)
-        tc.unicast(data_size, pe, dest, deps, output_var)
+        tc.unicast(tensor_name, data_size, pe, dest, deps, output_var)
         rootLogger.info("\t{0} from PE {1} to GlobalBuffer Port {2}".format(output_var, pe, dest))
 
 
-def combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file = 'tc.csv'):
+def combine_schedule(mem_schedule, noc_schedule, weight_schedule, out_file = 'tc.csv'):
     deps = []
 
-    rootLogger.info("================ Generate TCs to {0} ================".format(csv_file))
+    rootLogger.info("================ Generate TCs to {0} ================".format(out_file))
 
     tc = TC_Generator(noc_schedule['num_spatial_cores'])
 
@@ -533,11 +592,10 @@ def combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file = 'tc
                     dep_vars.append("Outputs_Update_{}_{}".format(mem_i-2, noc_schedule['num_steps'] -1))
 
                 # construct broadcast and point-to-point req based the addrs
-                # construct_send_reqs("MEM{}_{}".format(var_name, mem_i), tc, mem_schedule['buf_spatial'][var_name], data_size, dep_vars)
-                var_name = "MEM{}_{}".format(var_name, mem_i)
-                output_var = var_name+"__req_send_unicast_"+str(tc.noc.globalbuf_port)
+                var_name_annotate = "MEM{}_{}".format(var_name, mem_i)
+                output_var = var_name_annotate+"__req_send_unicast_"+str(tc.noc.globalbuf_port)
                 deps = tc.get_deps(dep_vars)
-                tc.unicast(data_size, tc.noc.dram_port, tc.noc.globalbuf_port, deps, output_var)
+                tc.unicast(var_name, data_size, tc.noc.dram_port, tc.noc.globalbuf_port, deps, output_var)
 
         
         base_i = mem_i * noc_schedule['num_steps']
@@ -578,7 +636,7 @@ def combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file = 'tc
                     #        dep_vars.append(var_name + "_" + str(i-1))
                             
                     # construct broadcast and point-to-point req based the addrs
-                    construct_send_reqs("{}_{}_{}".format(var_name, mem_i, i), tc, noc_schedule['buf_spatial'][var_name], data_size, dep_vars, gb_dep_vars, tc.noc.globalbuf_port)
+                    construct_send_reqs("{}_{}_{}".format(var_name, mem_i, i), tc, noc_schedule['buf_spatial'][var_name], var_name, data_size, dep_vars, gb_dep_vars, tc.noc.globalbuf_port)
             
             # 1. Check if there is need to load partial sum
             var_name = "Weights"
@@ -589,7 +647,7 @@ def combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file = 'tc
                     dep_vars.append("Outputs_Update_{}_{}".format(mem_i, i-2))
 
                 data_size = weight_schedule['data_size'][var_name] * var_bits[var_name]
-                construct_send_reqs("{}_{}_{}".format(var_name, mem_i, i), tc, weight_schedule['buf_spatial'][var_name], data_size, dep_vars, mem_port=tc.noc.dram_port)
+                construct_send_reqs("{}_{}_{}".format(var_name, mem_i, i), tc, weight_schedule['buf_spatial'][var_name], var_name, data_size, dep_vars, mem_port=tc.noc.dram_port)
 
 
             # 2. PE execution
@@ -629,14 +687,16 @@ def combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file = 'tc
                 rootLogger.info("Spatial Reduction for Partial Sum".format(noc_schedule['pe_cycle']))
                 dep_vars = ["Outputs_Update_{}_{}".format(mem_i, i)]
                 # in-network reduction width is 24 bits
-                ret_pes = construct_reduce_reqs("Outputs_Reduce_{}_{}".format(mem_i, i), tc, noc_schedule['buf_spatial']['Outputs'], data_size * var_bits['Outputs'], dep_vars)
+                tensor_name = "Outputs"
+                ret_pes = construct_reduce_reqs("Outputs_Reduce_{}_{}".format(mem_i, i), tc, noc_schedule['buf_spatial']['Outputs'], tensor_name, data_size * var_bits['Outputs'], dep_vars)
 
                 dep_vars = ["Outputs_Update_{}_{}".format(mem_i, i), "Outputs_Reduce_{}_{}".format(mem_i, i)]  
                 if i > 0:
                     dep_vars.append("{}_{}_{}".format(var_name, mem_i, i-1))
                 # if C is not completed, we cannot quantize, assume 24 bits for now 
                 # if assume quantized, output bits should be 8 bits
-                construct_toglobalbuf_reqs("{}_{}_{}".format(var_name,mem_i, i), tc, ret_pes, data_size * var_bits['Outputs'], dep_vars)
+                tensor_name = "Outputs"
+                construct_toglobalbuf_reqs("{}_{}_{}".format(var_name,mem_i, i), tc, ret_pes, tensor_name, data_size * var_bits['Outputs'], dep_vars)
                 last_output_store = "{}_{}_{}".format(var_name,mem_i, i)
             
         # C. Store outputs from GlobalBuffer to DRAM
@@ -656,9 +716,10 @@ def combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file = 'tc
             var_name = "MEM{}_{}".format(var_name, mem_i)
             output_var = var_name+"__req_send_unicast_"+str(tc.noc.dram_port)
             deps = tc.get_deps(dep_vars)
-            tc.unicast(data_size, tc.noc.globalbuf_port, tc.noc.dram_port, deps, output_var)
+            tensor_name = "Outputs"
+            tc.unicast(tensor_name, data_size, tc.noc.globalbuf_port, tc.noc.dram_port, deps, output_var)
 
-    tc.to_file(csv_file)
+    tc.to_file(out_file)
     return tc
 
 def test_tc_hop_count():
@@ -667,7 +728,7 @@ def test_tc_hop_count():
     print(total_hops)
 
 def test_tc():
-    csv_file = 'tc.csv'
+    out_file = 'tc.csv'
 
     tc = TC_Generator(16)
 
@@ -688,10 +749,10 @@ def test_tc():
     deps = tc.get_deps(["Outputs"])
     tc.all_to_dram(2**8, deps, "Output_GlobalBuffer")
     
-    tc.to_file(csv_file)
+    tc.to_file(out_file)
 
 
-def gen_tc(xml_file, csv_file, outer_loopcount_limit = None):
+def gen_tc(xml_file, out_file, outer_loopcount_limit = None):
     subnest_info = get_subnest_info(xml_file);
     
     timeout = False
@@ -718,20 +779,19 @@ def gen_tc(xml_file, csv_file, outer_loopcount_limit = None):
     for var in ['Weights', 'Inputs', 'Outputs', 'Outputs_Store']:
         cost['Total'] += cost[var]
 
-    tc = combine_schedule(mem_schedule, noc_schedule, weight_schedule, csv_file)
+    tc = combine_schedule(mem_schedule, noc_schedule, weight_schedule, out_file)
     return (timeout, (cost, (tc.unicast_hops, tc.multicast_hops)))
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) == 2: 
-        xml_file = sys.argv[1]
-    else: 
-        xml_file = "timeloop-model.map+stats.xml"
-    module_name = os.path.basename(__file__).replace(".py", "")
-    utils.setup_logging(module_name, rootLogger)  
+    # module_name = os.path.basename(__file__).replace(".py", "")
+    # utils.setup_logging(module_name, rootLogger)  
 
-    xml_file = pathlib.Path(xml_file) 
-    tc_csv = xml_file.parent / '{}.csv'.format(prefix)
+    parser = construct_argparser()
+    args = parser.parse_args()
+
+
+    xml_file = pathlib.Path(args.input_xml) 
+    out_file = pathlib.Path(args.output)
     
-    gen_tc(xml_file, tc_csv)
+    gen_tc(xml_file, out_file)

@@ -8,6 +8,8 @@ import copy
 import utils
 import os 
 import re
+import json
+from json import JSONEncoder
 import numpy as np
 from utils import OrderedDefaultdict
 
@@ -33,11 +35,18 @@ var_bits = {
 def construct_argparser():
     parser = argparse.ArgumentParser(description='Run Configuration')
     parser.add_argument('-o',
-                        '--output_csv',
+                        '--output',
                         type=str,
-                        help='Output CSV file',
-                        default='output_csv',
+                        help='Output file path',
+                        default='output',
                         )
+    parser.add_argument('-f',
+                        '--format',
+                        type=str,
+                        help='Output format',
+                        default='output_format',
+                        )
+
     parser.add_argument('-i',
                         '--input_xml',
                         type=str,
@@ -67,6 +76,7 @@ dim_var = {
         5: ['Weights', 'Outputs'],  # K
         6: ['Inputs', 'Outputs'],  # N
     }
+
 
 def xml2dict(t):
     d = {t.tag: {} if t.attrib else None}
@@ -265,6 +275,7 @@ def init_data_size(subnest_info, start_level):
         logger.info("Data size:\n\t{}={}".format(var_name, data_size[var_name]))
         #print("Data size:\n\t{}={}".format(var_name, schedule['data_size'][var_name]))
     return data_size
+
 
 def get_iter_space(subnest, start_level, end_level):
     loops = []
