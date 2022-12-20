@@ -17,7 +17,7 @@ A `timeloop-model.map+stats.xml` file will be generated as in [this example](htt
 ### 2.2 Generate the Transactions
 To run the simulation, run:
 ```
-python gen_tc_io.py timeloop-model.map+stats.xml
+python gen_tc_io.py -i timeloop-model.map+stats.xml -o tc.csv
 ```
 A `nb.csv` file will be generated and we can pass it as input to the simulator. 
 
@@ -25,7 +25,7 @@ A `nb.csv` file will be generated and we can pass it as input to the simulator.
 ```
 cd matchlib/cmod/unittests/noc 
 make 
-./sim_test nb.csv > out
+./sim_test tc.csv > out
 ```
 To see how long the simulation takes, search for `FINISH @` in the `out` file.
 A `nb.json` will be generated and can be viewed in the Chrome browser [chrome://tracing](chrome://tracing). 
