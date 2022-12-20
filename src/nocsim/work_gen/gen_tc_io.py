@@ -28,6 +28,13 @@ def construct_argparser():
                         help='input_xml',
                         default='timeloop-model.map+stats.xml',
                         )
+    parser.add_argument('-p',
+                        '--packet_size',
+                        type=int,
+                        help='packet size in bits',
+                        default=256,
+                        )
+
     return parser
 
 
@@ -148,7 +155,7 @@ class NoC(object):
 
 flit_size = 64
 num_flit = 4 # total 5 but 1 for header
-packet_size = flit_size * num_flit
+_PACKET_SIZE =  flit_size * num_flit
 UNICAST, MULTICAST, COUNT = range(3)
 
 class TC_Generator(object):   
@@ -237,7 +244,7 @@ class TC_Generator(object):
         """
         dep_tcs = []
 
-        num_packets = (size - 1) // packet_size + 1
+        num_packets = (size - 1) // _PACKET_SIZE + 1
         entries = size // var_bits[tensor_name]
         annotation = "{}: unicast from {} to {} dep on {}, {} bits in {} packets".format(var, src, dest, deps, size, num_packets)
         tc = TC(self.tc_id, src, UNICAST, deps, tensor_name, entries, annotation)
@@ -248,10 +255,10 @@ class TC_Generator(object):
         self.write_deps[var] = dep_tcs
         if src == self.noc.globalbuf_port: 
             hops = self.count_hops(src, [dest])
-            self.unicast_hops += hops + num_packets * packet_size // flit_size
+            self.unicast_hops += hops + num_packets * _PACKET_SIZE // flit_size
         #if dest == self.noc.globalbuf_port: 
         #    hops = self.count_hops(src, [dest])
-        #    self.unicast_hops += hops + num_packets * packet_size // flit_size
+        #    self.unicast_hops += hops + num_packets * _PACKET_SIZE // flit_size
 
         self.tc_id += 1
 
@@ -265,13 +272,13 @@ class TC_Generator(object):
         """
         dep_tcs = []
 
-        num_packets = (size - 1) // packet_size + 1
+        num_packets = (size - 1) // _PACKET_SIZE + 1
         entries = size // var_bits[tensor_name]
         # TODO assume data is of multiple packet size
         # rem_size = size 
         # while(rem_size > 0):
-        #     if rem_size > packet_size:
-        #         send_size = packet_size 
+        #     if rem_size > _PACKET_SIZE:
+        #         send_size = _PACKET_SIZE 
         #     else:
         #         send_size = rem_size
         #     rem_size = rem_size - send_size
@@ -286,7 +293,7 @@ class TC_Generator(object):
             all_hops = [self.count_hops(src, [dest]) for dest in dests]
             hops = max(all_hops) 
             #self.multicast_hops += hops * num_packets
-            self.multicast_hops += hops + num_packets * packet_size // flit_size
+            self.multicast_hops += hops + num_packets * _PACKET_SIZE // flit_size
         self.tc_id += 1
     
     def gather(self, tensor_name, size, srcs, dest, deps, var):
@@ -793,5 +800,6 @@ if __name__ == "__main__":
 
     xml_file = pathlib.Path(args.input_xml) 
     out_file = pathlib.Path(args.output)
+    _PACKET_SIZE = args.packet_size
     
     gen_tc(xml_file, out_file)
