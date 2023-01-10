@@ -29,13 +29,15 @@ def construct_argparser():
                         '--output_dir',
                         type=str,
                         help='Output Folder',
-                        default='output_dir',
+                        default='output_dir_1',
                         )
     parser.add_argument('-ap',
                         '--arch_path',
                         type=str,
                         help='Hardware Architecture Path',
-                        default=f'{_COSA_DIR}/gemmini/arch/arch_debug.yaml',
+                        default=f'{_COSA_DIR}/gemmini/arch/arch.yaml',
+                        # default=f'{_COSA_DIR}/gemmini/arch/arch_debug.yaml',
+                        # default=f'{_COSA_DIR}/gemmini/arch/arch_debug_64.yaml',
                         )
     parser.add_argument('-mp',
                         '--mapspace_path',
@@ -47,7 +49,7 @@ def construct_argparser():
                         '--prob_path',
                         type=str,
                         help='Problem Dimension Path',
-                        default=f'{_COSA_DIR}/gemmini/prob/prob_debug.yaml',
+                        default=f'{_COSA_DIR}/gemmini/prob/debug/prob_1.yaml',
                         # default=f'{_COSA_DIR}/configs/workloads/resnet50_graph/_outputs_input.2.yaml',
                         )
     parser.add_argument('-omap',
@@ -102,6 +104,7 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
                         rank_arr[j] = 1
                 Z_var.append(rank_arr)
             Z.append(Z_var)
+    print('Z',Z)
 
     with gurobipy.Env(empty=True) as env:
         env.setParam('OutputFlag', 0)
@@ -113,7 +116,7 @@ def cosa(prob, arch, A, B, part_ratios, global_buf_idx, Z=None):
             factor_config, spatial_config, outer_perm_config, run_time = mip_solver(m, prime_factors, strides, arch, part_ratios,
                                                                             global_buf_idx=global_buf_idx, A=_A, Z=Z,
                                                                             compute_factor=10, util_factor=-0.1,
-                                                                            traffic_factor=1)
+                                                                            traffic_factor=0.1)
     return factor_config, spatial_config, outer_perm_config, run_time
 
 
@@ -125,6 +128,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
 
     num_vars = len(A[0])
     num_mems = len(Z[0])
+    print(Z)
 
     # m = Model("mip")
 
@@ -155,6 +159,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
             M_v.append(bound)
         M_log.append(M_v)
 
+    print(M_log)
     # spatial constraints
     S = arch.S
 
@@ -190,7 +195,8 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     # valid_dim = [[],[4],[5],[],[]] # CK 
     valid_dim = [[],] * total_levels
     valid_dim[1] = [4] # C
-    valid_dim[2] = [5] # K
+    for i in range(gb_start_level, gb_start_level+perm_levels):
+        valid_dim[i] = [5] # K
     for i in range(total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
@@ -246,7 +252,24 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     # add another relation var v - f, 3 - 7*n loop-level
     s = {}
     y = {}
-    for v in range(num_vars):
+
+    for v in [2]:
+        for i in range(gb_start_level, dram_start_level + perm_levels):
+            row_sum = 0
+            y[(v, i)] = m.addVar(lb=0, ub=1, vtype=GRB.INTEGER, name="y({},{})".format(v, i))
+            for j, f_j in enumerate(f):
+                for n, f_jn in enumerate(f_j):
+                    row_sum += x[(i, j, n, 1)] * A[j][v]
+            if i > dram_start_level:
+                m.addConstr(y[(v, i)] >= y[(v, i - 1)], "y_v_i_sv_{}_{}".format(v, i))
+                # can be ==
+                m.addConstr(y[(v, i)] >= row_sum, "y_v_i_row_sum_{}_{}".format(v, i))
+            else:
+                # can be ==
+                m.addConstr(y[(v, i)] == row_sum, "y_v_i_row_sum_{}_{}".format(v, i))
+            s[(v, i)] = row_sum
+
+    for v in range(num_vars-1):
         for i in range(dram_start_level, dram_start_level + perm_levels):
             row_sum = 0
             y[(v, i)] = m.addVar(lb=0, ub=1, vtype=GRB.INTEGER, name="y({},{})".format(v, i))
@@ -262,7 +285,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                 m.addConstr(y[(v, i)] == row_sum, "y_v_i_row_sum_{}_{}".format(v, i))
             s[(v, i)] = row_sum
 
-    for v in range(num_vars):
+    for v in range(num_vars-1):
         for i in range(gb_start_level, gb_start_level + perm_levels):
             row_sum = 0
             y[(v, i)] = m.addVar(lb=0, ub=1, vtype=GRB.INTEGER, name="y({},{})".format(v, i))
@@ -316,10 +339,9 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
 
 
     # Add spatial constraints
-    print(S)
     print('dram_start_level', dram_start_level)
+    print('gb_start_level', gb_start_level)
     print('perm_levels', perm_levels)
-    print('dest', dram_start_level - perm_levels+1)
     spatial_tile = 0
     for i in range(dram_start_level, dram_start_level + perm_levels):
         for j, f_j in enumerate(f):
@@ -332,7 +354,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
                 spatial_tile += np.log2(f[j][n]) * x[(i, j, n, 0)]
-    m.addConstr(spatial_tile <= np.log2(S[gb_start_level]), "spatial_tile_gb_{}".format(prefix))
+    m.addConstr(spatial_tile <= np.log2(S[flat_to_orig(gb_start_level)]), "spatial_tile_gb_{}".format(prefix))
 
     for i in range(gb_start_level):
         spatial_tile = 0
@@ -362,7 +384,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     for v in range(num_vars):
         # for i_ in range(dram_start_level + perm_levels):
         for i_ in range(total_levels):
-            for i in range(num_mems):
+            for i in range(num_mems-1):
                 for j, f_j in enumerate(f):
                     for n, f_jn in enumerate(f_j):
                         factor = 1
@@ -370,15 +392,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                             factor = strides[0]
                         if v == 1 and j == 3: # for input and problem dim Q, multiply the stride
                             factor = strides[1]
-
-                        if i_ >= dram_start_level and i_ < dram_start_level + perm_levels:
-                            # print(flat_to_orig(dram_start_level))
-                            Z_const = Z[v][i][flat_to_orig(dram_start_level)]
-                        elif i_ >= gb_start_level and i_ < gb_start_level + perm_levels:
-                            # print(flat_to_orig(gb_start_level))
-                            Z_const = Z[v][i][flat_to_orig(gb_start_level)]
-                        else:
-                            Z_const = Z[v][i][i_]
+                        Z_const = Z[v][i][flat_to_orig(i_)]
                         buf_util[(i, v)] += np.log2(factor * f[j][n]) * (x[(i_, j, n, 0)] + x[i_, j, n, 1]) * A[j][
                             v] * Z_const  # use the i for the cur mem for relationship 
                         # only add once
@@ -419,26 +433,44 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
         gb_spatial_cost[v] = size
 
     dram_data_size = {}
-    for v in range(num_vars):
+    for v in range(num_vars-1):
         size = 0
         for i in range(dram_start_level):
             for j, f_j in enumerate(f):
                 for n, f_jn in enumerate(f_j):
                     # TRICK prioritize spatial
-                    factors = 0.8 + 0.04 * i
-                    size += factors * np.log2(f[j][n]) * (x[(i, j, n, 0)] + x[i, j, n, 1]) * A[j][v]
+                    # factors = 0.8 + 0.04 * i
+                    size += np.log2(f[j][n]) * (x[(i, j, n, 0)] + x[i, j, n, 1]) * A[j][v]
         dram_data_size[v] = size
 
-    gb_data_size = {}
-    for v in range(num_vars):
+    for v in [2]:
         size = 0
         for i in range(gb_start_level):
             for j, f_j in enumerate(f):
                 for n, f_jn in enumerate(f_j):
                     # TRICK prioritize spatial
-                    factors = 0.8 + 0.04 * i
-                    size += factors * np.log2(f[j][n]) * (x[(i, j, n, 0)] + x[i, j, n, 1]) * A[j][v]
-        gb_data_size[v] = size
+                    # factors = 0.8 + 0.04 * i
+                    size += np.log2(f[j][n]) * (x[(i, j, n, 0)] + x[i, j, n, 1]) * A[j][v]
+        dram_data_size[v] = size 
+
+    #    output_factor = 1
+    #    if v == 2: 
+    #        output_factor = 2
+    #    dram_data_size[v] = size * output_factor
+
+    gb_data_size = {}
+    for v in range(num_vars-1):
+        size = 0
+        for i in range(gb_start_level):
+            for j, f_j in enumerate(f):
+                for n, f_jn in enumerate(f_j):
+                    # TRICK prioritize spatial
+                    # factors = 0.8 + 0.04 * i
+                    size += np.log2(f[j][n]) * (x[(i, j, n, 0)] + x[i, j, n, 1]) * A[j][v]
+    #    output_factor = 1
+    #    if v == 2: 
+    #        output_factor = 2
+        gb_data_size[v] = size 
 
     gb_traffic = {}
     for v in range(num_vars):
@@ -448,48 +480,46 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
         gb_traffic[v] = size
 
     dram_traffic = {}
-    for v in range(num_vars):
+    for v in range(num_vars-1):
         size = 0
         for i in range(dram_start_level, dram_start_level + perm_levels):
             size += l[(v, i)] * y[(v, i)]
         dram_traffic[v] = size
 
-        # for j, f_j in enumerate(f):
-        #     for n, f_jn in enumerate(f_j):
-        #         size += np.log2(f[j][n]) * (x[(i, j, n, 1)])  # * corr 
+    for v in [2]:
+        size = 0
+        for i in range(gb_start_level, dram_start_level + perm_levels):
+            size += l[(v, i)] * y[(v, i)]
         dram_traffic[v] = size
 
+        
     total_util = 0
     for i in range(gb_start_level):
-        # for each memory and each variable there is a constraint
         for v in range(num_vars):
-            # make weight util more important since it directly comes from dram
-            factor = 1.01 if i == 2 else 1
-            total_util += buf_util[(i, v)] * factor
+            total_util += buf_util[(i, v)]
 
     for i in range(gb_start_level, gb_start_level+perm_levels):
-        # for each memory and each variable there is a constraint
         for v in range(num_vars):
-            # make weight util more important since it directly comes from dram
-            factor = 1.01 if i == 2 else 1
-            total_util += buf_util[(flat_to_orig(i), v)] * factor
+            total_util += buf_util[(flat_to_orig(i), v)]
 
 
     dram_total_traffic = 0
     gb_total_traffic = 0
     for v in range(num_vars):
         #  TRICKS
-        if v == 0:
-            # encode dram latency for weights
-            factor = 1.01
-        else:
-            factor = 1
+        # if v == 0:
+        #     # encode dram latency for weights
+        #     factor = 1.01
+        # else:
+        #     factor = 1
         dram_total_traffic += 0.99 * dram_data_size[v] * 0.99 * dram_spatial_cost[v] + dram_traffic[v] * factor
-        gb_total_traffic += 0.99 * gb_data_size[v] * 0.99 * gb_spatial_cost[v] + gb_traffic[v] * factor
+        # gb_total_traffic += 0.99 * gb_data_size[v] * 0.99 * gb_spatial_cost[v] + gb_traffic[v] * factor
 
-    total_traffic = dram_total_traffic * 1.2 + gb_total_traffic
+    # total_traffic = dram_total_traffic * 1.2 + gb_total_traffic
+    total_traffic = dram_total_traffic 
     # ========================== user-defined objective function ========================== #
-    cosa_obj = total_util * util_factor + total_compute * compute_factor + total_traffic * traffic_factor
+    # cosa_obj = total_util * util_factor + total_compute * compute_factor # + total_traffic * traffic_factor
+    cosa_obj = total_compute * compute_factor + total_traffic * traffic_factor
 
     max_it = m.addVar(vtype=GRB.CONTINUOUS, name="max_it")
     its = []
@@ -523,7 +553,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     milp_runtime = end_time - begin_time
 
     # output all constraints and variables
-    # m.write("debug.lp")
+    m.write("debug.lp")
 
     result_dict = {}
     for variable in m.getVars():
@@ -602,7 +632,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
         factor_config.append(sub_factor_config)
         spatial_config.append(sub_spatial_config)
 
-    for i in range(gb_start_level):
+    for i in range(total_levels):
         for j, f_j in enumerate(f):
             for n, f_jn in enumerate(f_j):
                 if f[j][n] == 1:
@@ -616,38 +646,6 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                         factor_config[j][n] = flat_to_orig(i)
                         if k == 0:
                             spatial_config[j][n] = 1
-
-    for i in range(dram_start_level + perm_levels, total_levels):
-        for j, f_j in enumerate(f):
-            for n, f_jn in enumerate(f_j):
-                if f[j][n] == 1:
-                    factor_config[j][n] = num_mems - 1
-                    spatial_config[j][n] = 0
-                    continue
-
-                for k in range(2):
-                    name = "X({},{},{},{})".format(i, j, n, k)
-                    val = result_dict[name]
-                    if val >= 0.9:
-                        if k == 0:
-                            raise ValueError('Invalid Mapping')
-                        factor_config[j][n] = flat_to_orig(i) # i - perm_levels + 1
-
-    for i in range(gb_start_level + perm_levels, total_levels):
-        for j, f_j in enumerate(f):
-            for n, f_jn in enumerate(f_j):
-                if f[j][n] == 1:
-                    factor_config[j][n] = num_mems - 1
-                    spatial_config[j][n] = 0
-                    continue
-
-                for k in range(2):
-                    name = "X({},{},{},{})".format(i, j, n, k)
-                    val = result_dict[name]
-                    if val >= 0.9:
-                        if k == 0:
-                            raise ValueError('Invalid Mapping')
-                        factor_config[j][n] = flat_to_orig(i) # i - perm_levels + 1
 
     # set to -1 for not specified 
     for j, f_j in enumerate(f):
@@ -691,6 +689,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
         [1, 0, 0],
         [0, 0, 1],
         [1, 1, 0],
+        #[0, 0, 0],
         [0.33, 0.33, 0.33],
     ]
     factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=2,
