@@ -83,6 +83,9 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cpu:0'
 
             m_key = "%s-%i" % (class_name, module_idx + 1)
             summary[m_key] = OrderedDict()
+            # workaround for not derefed tensor
+            if type(input[0]) == list:
+                input = input[0]
             summary[m_key]["input_shape"] = list(input[0].size())
             summary[m_key]["input_shape"][0] = batch_size
             if isinstance(output, (list, tuple)):
@@ -194,8 +197,7 @@ def generate_prob(model_str, batch_size, output_dir):
 
 if  __name__ == "__main__":
 
-    # model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'deepbench', 'densenet161', 'vgg16', 'dlrm']
-    model_strs = ['resnet50']
+    model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'densenet161', 'vgg16']
     output_dir = pathlib.Path('workloads')
     
     for model in model_strs:
