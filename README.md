@@ -4,7 +4,9 @@ For more details, please refer to:
 - [ISCA'21 CoSA Paper](https://arxiv.org/pdf/2105.01898.pdf)
 - [ISCA'21 CoSA Presentation](https://people.eecs.berkeley.edu/~qijing.huang/2021ISCA/2021ISCA_CoSA_Presentation.pdf)
 
-CoSA leverages the regularities in DNN operators and hardware to formulate the DNN scheduling space into a MIP problem with algorithmic and architectural constraints, which can be solved to automatically generate a highly efficient schedule in one shot.
+CoSA leverages the regularities in DNN operators and hardware to formulate the DNN scheduling space into a MIP problem with algorithmic and architectural constraints, which can be solved to automatically generate a highly efficient schedule in one shot. 
+
+Our transaction-based NoC simulator for evaluating various mappings can be found [here](https://github.com/ucb-bar/cosa/tree/main/src/nocsim). It is developed in SystemC and Python and uses the HLS router design from [Matchlib](https://github.com/NVlabs/matchlib).  
 
 ## Installation
 
