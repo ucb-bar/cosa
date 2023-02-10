@@ -19,16 +19,16 @@ To run the simulation, run:
 ```
 python gen_tc_io.py -i timeloop-model.map+stats.xml -o tc.csv
 ```
-A `nb.csv` file will be generated and we can pass it as input to the simulator. 
+A `tc.csv` file will be generated and we can pass it as input to the simulator. 
 
 ### 2.2 Generate the Transactions
 ```
 cd matchlib/cmod/unittests/noc 
 make 
-./sim_test tc.csv > out
+./sim_test tc
 ```
 To see how long the simulation takes, search for `FINISH @` in the `out` file.
-A `nb.json` will be generated and can be viewed in the Chrome browser [chrome://tracing](chrome://tracing). 
+A `tc.json` will be generated and can be viewed in the Chrome browser [chrome://tracing](chrome://tracing). 
 
 ## 3 NoC Modeling
 ### 3.1 NoC Model
