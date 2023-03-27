@@ -586,7 +586,9 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
         #[0, 0, 0],
         [0.33, 0.33, 0.33],
     ]
-    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=2,
+    
+    global_buf_idx = 2
+    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=global_buf_idx,
                                                                       Z=Z)
 
     update_factor_config = factor_config
@@ -607,9 +609,13 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
 
     logger.info(f'update_factor_config: {update_factor_config}')
     perm_config = mapspace.get_default_perm()
-    perm_config[1] = outer_perm_config
+    
+    dram_start_level = 3
+    assert(dram_start_level == global_buf_idx+1)
+    perm_config[dram_start_level] = outer_perm_config
     print(f'spatial_to_factor_map: {spatial_to_factor_map}')
     print(f'update_factor_config: {update_factor_config}')
+    print(perm_config)
 
     status_dict = {}
     try:
