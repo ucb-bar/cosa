@@ -172,7 +172,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     print('global_buf_idx/gb_start_level', global_buf_idx)
     gb_start_level = global_buf_idx
     # JENNY update the dram start to include gb_start and perm
-    dram_start_level = gb_start_level + perm_levels + 1 
+    dram_start_level = gb_start_level + perm_levels  
 
     total_levels = num_mems - 2 + perm_levels * 2
 
@@ -181,8 +181,6 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
             return index
         elif index >= gb_start_level and index < gb_start_level + perm_levels:
             return gb_start_level
-        elif index >= gb_start_level + perm_levels and index < dram_start_level:
-            return index - perm_levels + 1
         elif index >= dram_start_level and index < dram_start_level + perm_levels:
             return gb_start_level + 1
         elif index >= dram_start_level + perm_levels:
@@ -198,9 +196,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     # valid_dim = [[],[4],[5],[],[]] # CK 
     valid_dim = [[],] * total_levels
     valid_dim[1] = [4] # C
-    # spatial 
-    # for i in range(gb_start_level+1, gb_start_level+perm_levels):
-    for i in range(gb_start_level+perm_levels, gb_start_level+perm_levels+1):
+    for i in range(gb_start_level, gb_start_level+perm_levels):
         valid_dim[i] = [5] # K
     for i in range(total_levels):
         for j, f_j in enumerate(f):
@@ -218,15 +214,6 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                     name = "X({},{},{},{})".format(i, j, n, k)
                     spatial_temp_sum += x[(i, j, n, k)]
                 m.addConstr(spatial_temp_sum <= 1, "spatial_temp_sum_{}_{}_{}".format(i, j, n))
-
-
-    # Set scratchpad factor to 1 for gemmini 
-    for i in range(gb_start_level, gb_start_level + perm_levels):
-        for j, f_j in enumerate(f):
-            for n, f_jn in enumerate(f_j):
-                for k in range(2):
-                    m.addConstr(x[(i, j, n, k)] == 0, "scratchpad_invalid_{}_{}_{}".format(i, j, n))
-
 
     # j, n is the loop level 
     # each mapper must have a mapping
@@ -267,21 +254,18 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     s = {}
     y = {}
 
-    # why
-    # as output permutation of DRAM, Scratchpad matters 
     for v in [2]:
-        # for i in range(gb_start_level, dram_start_level + perm_levels): # was here to account for the fact that scratchpad order affects output traffic
-        for i in range(dram_start_level, dram_start_level + perm_levels):
+        for i in range(gb_start_level, dram_start_level + perm_levels):
             row_sum = 0
             y[(v, i)] = m.addVar(lb=0, ub=1, vtype=GRB.INTEGER, name="y({},{})".format(v, i))
             for j, f_j in enumerate(f):
                 for n, f_jn in enumerate(f_j):
                     row_sum += x[(i, j, n, 1)] * A[j][v]
-            if i > dram_start_level: # push outward
+            if i > dram_start_level:
                 m.addConstr(y[(v, i)] >= y[(v, i - 1)], "y_v_i_sv_{}_{}".format(v, i))
                 # can be ==
                 m.addConstr(y[(v, i)] >= row_sum, "y_v_i_row_sum_{}_{}".format(v, i))
-            else: # might be wrong <- wants to start from the innermost level
+            else:
                 # can be ==
                 m.addConstr(y[(v, i)] == row_sum, "y_v_i_row_sum_{}_{}".format(v, i))
             s[(v, i)] = row_sum
@@ -337,7 +321,6 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                         x_sums += filter_in
             m.addConstr(zz[(var, mem_level)] <= x_sums, "z_x_sum_{}_{}_{}".format(prefix, var, mem_level))
 
-    # this is for getting the perm factor sum for each val at perm levels
     l = {}
     for v in range(num_vars):
         for i in range(dram_start_level, dram_start_level + perm_levels):
@@ -347,13 +330,13 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
                     row_sum += np.log2(f[j][n]) * (x[(i, j, n, 1)])
             l[(v, i)] = row_sum
 
-    # for v in range(num_vars):
-    #     for i in range(gb_start_level, gb_start_level + perm_levels):
-    #         row_sum = 0
-    #         for j, f_j in enumerate(f):
-    #             for n, f_jn in enumerate(f_j):
-    #                 row_sum += np.log2(f[j][n]) * (x[(i, j, n, 1)])
-    #         l[(v, i)] = row_sum
+    for v in range(num_vars):
+        for i in range(gb_start_level, gb_start_level + perm_levels):
+            row_sum = 0
+            for j, f_j in enumerate(f):
+                for n, f_jn in enumerate(f_j):
+                    row_sum += np.log2(f[j][n]) * (x[(i, j, n, 1)])
+            l[(v, i)] = row_sum
 
 
     # Add spatial constraints
@@ -373,14 +356,6 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
             for n, f_jn in enumerate(f_j):
                 spatial_tile += np.log2(f[j][n]) * x[(i, j, n, 0)]
     m.addConstr(spatial_tile <= np.log2(S[flat_to_orig(gb_start_level)]), "spatial_tile_gb_{}".format(prefix))
-
-    for i in range(gb_start_level+perm_levels, dram_start_level):
-        spatial_tile = 0
-        for j, f_j in enumerate(f):
-            for n, f_jn in enumerate(f_j):
-                spatial_tile += np.log2(f[j][n]) * x[(i, j, n, 0)]
-        m.addConstr(spatial_tile <= np.log2(S[flat_to_orig(i)]), f"spatial_tile_{prefix}_{i}")
-
 
     for i in range(gb_start_level):
         spatial_tile = 0
@@ -499,14 +474,12 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
     #        output_factor = 2
         gb_data_size[v] = size 
 
-    #  gb_traffic = {}
-    #  for v in range(num_vars):
-    #      size = 0
-    #      for i in range(gb_start_level, gb_start_level + perm_levels):
-    #          print(l[(v,i)])
-    #          print(y[(v,i)])
-    #          size += l[(v, i)] * y[(v, i)]
-    #      gb_traffic[v] = size
+    gb_traffic = {}
+    for v in range(num_vars):
+        size = 0
+        for i in range(gb_start_level, gb_start_level + perm_levels):
+            size += l[(v, i)] * y[(v, i)]
+        gb_traffic[v] = size
 
     dram_traffic = {}
     for v in range(num_vars-1):
@@ -517,7 +490,7 @@ def mip_solver(m, f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_f
 
     for v in [2]:
         size = 0
-        for i in range(dram_start_level, dram_start_level + perm_levels):
+        for i in range(gb_start_level, dram_start_level + perm_levels):
             size += l[(v, i)] * y[(v, i)]
         dram_traffic[v] = size
         
@@ -722,7 +695,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
         #[0, 0, 0],
         [0.33, 0.33, 0.33],
     ]
-    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=1,
+    factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=2,
                                                                       Z=Z)
 
     update_factor_config = factor_config
