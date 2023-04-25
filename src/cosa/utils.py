@@ -36,7 +36,7 @@ class OrderedDefaultdict(collections.OrderedDict):
 
     def __init__(self, default_factory=None, *args, **kwargs):
         if not (default_factory is None
-                or isinstance(default_factory, collections.Callable)):
+                or isinstance(default_factory, collections.abc.Callable)):
             raise TypeError('first argument must be callable or None')
         super(OrderedDefaultdict, self).__init__(*args, **kwargs)
         self.default_factory = default_factory  # called by __missing__()
