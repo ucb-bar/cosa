@@ -90,13 +90,12 @@ def get_summary_info(stats_file):
     with open(stats_file, 'r') as f:
         lines = f.readlines()
     for line in lines:
-        # m = re.match(r"Energy: (.*) uJ", line)
-        m = re.match(r"Total topology energy: (.*) pJ", line)
+        m = re.match(r"Energy: (.*) uJ", line)
         if m:
             energy = m.group(1)
             summary['energy'] = float(energy)
         else:
-            m = re.match(r"Max topology cycles: (.*)", line)
+            m = re.match(r"Cycles: (.*)", line)
             if m:
                 cycle = m.group(1)
                 summary['cycle'] = int(cycle)
