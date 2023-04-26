@@ -37,7 +37,7 @@ def parse_yaml(yaml_path):
 
 def compose_prob(file_path, prob_dict):
     input_dict = {}
-    input_dict["problem"] = prob_dict
+    input_dict['problem'] = prob_dict
     input_dict['problem']['shape'] = 'cnn-layer'
     store_yaml(file_path, input_dict)
 
@@ -54,7 +54,7 @@ def get_unique_layers(model_strs, workload_dir):
         unique_layers= []
         for layer in layers:
             prob_path = model_dir / (layer + '.yaml') 
-            prob = parse_yaml(prob_path)
+            prob = parse_yaml(prob_path)['problem']
             key = tuple(sorted(prob.items())) 
             if key in d.keys():
                 d[key] +=1
@@ -177,8 +177,8 @@ def generate_prob_json(summary, output_dir):
                 prob_dict['Q'] = 1 
                 prob_dict['C'] = summary[layer]['weight'][1]
                 prob_dict['K'] = summary[layer]['weight'][0]
+            compose_prob(yaml_path, prob_dict)
 
-            store_yaml(yaml_path, prob_dict)
     layer_def_path = output_dir / 'layers.yaml'
     store_yaml(layer_def_path, layer_list)
 
@@ -197,8 +197,8 @@ def generate_prob(model_str, batch_size, output_dir):
 
 if  __name__ == "__main__":
 
-    model_strs = ['alexnet', 'resnet50', 'resnext50_32x4d', 'densenet161', 'vgg16']
-    output_dir = pathlib.Path('workloads')
+    model_strs = ['resnet18', 'alexnet', 'resnet50', 'resnext50_32x4d', 'densenet161', 'vgg16']
+    output_dir = pathlib.Path('.')
     
     for model in model_strs:
         generate_prob(model, 1, output_dir)
