@@ -2,7 +2,7 @@ import logging
 import pathlib
 import shutil
 
-import cosa.utils
+import cosa.utils as utils
 from cosa.parse_workload import *
 
 logger = logging.getLogger(__name__)
