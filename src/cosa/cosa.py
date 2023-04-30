@@ -9,6 +9,7 @@ import numpy as np
 import cosa.run_config as run_config
 from cosa.cosa_constants import _A, _B
 from cosa.cosa_input_objs import Prob, Arch, Mapspace
+from cosa.check_timeloop_version import check_timeloop_version
 from gurobipy import *
 
 logger = logging.getLogger()
@@ -20,6 +21,9 @@ try:
 except KeyError:
     _COSA_DIR = os.path.abspath(__file__ + "/../")
 
+# Ensure the Timeloop version matches the a specific commit 
+# that CoSA was developed for
+check_timeloop_version()
 
 def construct_argparser():
     parser = argparse.ArgumentParser(description='Run Configuration')
