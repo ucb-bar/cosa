@@ -288,10 +288,10 @@ def mip_solver(f, strides, arch, part_ratios, global_buf_idx, A, Z, compute_fact
                         buf_util[(i, v)] += np.log2(factor * f[j][n]) * (x[(i_, j, n, 0)] + x[i_, j, n, 1]) * A[j][
                             v] * Z_const  # use the i for the cur mem for relationship 
                         # only add once
-                        if i == 3 and j in [0, 1] and v == 1:
-                            buf_util[(i, v)] += (x[(i_, j, n, 0)] + x[(i_, j, n, 1)]) * (1 - zz[(j + 2, i)]) * np.log2(
+                        if i < 3 and j in [0, 1] and v == 1:
+                            buf_util[(i, v)] += (x[(i_, j, n, 0)] + x[(i_, j, n, 1)]) * (1 - zz[(j + 2, 3)]) * np.log2(
                                 f[j][n])
-                            buf_util[(i, v)] += (x[(i_, j, n, 0)] + x[(i_, j, n, 1)]) * zz[(j + 2, i)] * np.log2(2)
+                            buf_util[(i, v)] += (x[(i_, j, n, 0)] + x[(i_, j, n, 1)]) * zz[(j + 2, 3)] * np.log2(2)
 
     for v in range(num_vars):
         # excluding DRAM
@@ -562,7 +562,7 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path):
         [0, 0, 1],
         [1, 0, 0],
         [0, 1, 0],
-        [0, 0.25, 0.75],
+        [0, 0.5, 0.5],
         [0.33, 0.33, 0.33],
     ]
     factor_config, spatial_config, outer_perm_config, run_time = cosa(prob, arch, _A, B, part_ratios, global_buf_idx=4,
