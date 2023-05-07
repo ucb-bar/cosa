@@ -1,19 +1,15 @@
 import collections
 import copy
-import logging
 import os
 import pathlib
 import re
 import xml.etree.ElementTree as ET
 
 import numpy as np
-import cosa.utils
+import cosa.utils as utils
 from cosa.utils import OrderedDefaultdict
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.NOTSET)  # capture everything
-# logger.setLevel(logging.) # capture everything
-logger.disabled = True
+logger = utils.logger
 
 all_var_names = ["Weights", "Inputs", "Outputs"]
 

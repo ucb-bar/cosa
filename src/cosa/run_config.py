@@ -1,13 +1,10 @@
-import logging
 import pathlib
 import shutil
 
 import cosa.utils as utils
 from cosa.parse_workload import *
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # capture everything
-
+logger = utils.logger
 
 def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict=dict(), run_gen_map=True,
                run_gen_tc=False, run_sim_test=False, output_path='output_dir', spatial_configs=None, exe='sim_test',
@@ -43,7 +40,7 @@ def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict
             if status_dict_val['run_status'][2] == -1:
                 finish_run = False
         if finish_run:
-            logging.info("status_dict: {}".format(status_dict[status_dict_key]))
+            logger.info("status_dict: {}".format(status_dict[status_dict_key]))
             # return
             return status_dict_val
     else:
@@ -69,35 +66,35 @@ def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict
     prefix = 'tc'
 
     map_path = output_dir / 'map_16.yaml'
-    logging.info("map_path: {}".format(map_path))
+    logger.info("map_path: {}".format(map_path))
     xml_file = output_dir / 'timeloop-model.map+stats.xml'
     csv_file = output_dir / "{}.csv".format(prefix)
     json_file = output_dir / "{}.json".format(prefix)
     stats_file = output_dir / "{}.summary.json".format(prefix)
     status_dict_file = output_dir / "{}.dict.json".format(prefix)
 
-    # logging.debug("status_dict_before: {}".format(status_dict[status_dict_key]))
+    # logger.debug("status_dict_before: {}".format(status_dict[status_dict_key]))
     # generate map 
     if run_gen_map:
         # print('run_timeloop> timeloop-model {} {} {}'.format(mapspace.arch.path, mapspace.prob.path, map_path))
         if map_path.exists() and not xml_file.exists():
             status_dict[status_dict_key]['run_status'][0] = 0
         elif not xml_file.exists():
-            # logging.info("Run Generate Mapping")
+            # logger.info("Run Generate Mapping")
             utils.store_yaml(map_path, mapping)
             success = utils.run_timeloop(mapspace.arch.path, mapspace.prob.path, map_path, cwd=output_dir)
 
             # if passes timeloop check
             if not success:
                 status_dict[status_dict_key]['run_status'][0] = 0
-                logging.info("\tInvalid Mapping Detected!")
+                logger.info("\tInvalid Mapping Detected!")
                 if delete_invalid:
                     shutil.rmtree(
                         output_base / mapspace.arch.config_str() / mapspace.prob.config_str() / mapspace.config_str()[
                             0])
                 return status_dict[status_dict_key]
             else:
-                # logging.info("\tValid Mapping Detected!")
+                # logger.info("\tValid Mapping Detected!")
                 assert (xml_file.exists())
                 status_dict[status_dict_key]['run_status'][0] = 1
         else:
@@ -120,7 +117,7 @@ def run_config(mapspace, spatial_config, perm_config, factor_config, status_dict
                 for mem_util in buf:
                     utilized_capacity += mem_util
                 status_dict[status_dict_key]['utilized_capacity'].append(utilized_capacity)
-    logging.info("Status: {}".format(status_dict[status_dict_key]))
+    logger.info("Status: {}".format(status_dict[status_dict_key]))
     utils.store_json(status_dict_file, status_dict, indent=4)
     return status_dict[status_dict_key]
 

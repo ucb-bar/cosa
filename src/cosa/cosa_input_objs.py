@@ -1,6 +1,5 @@
 #!/usr/bin/env python3 
 import copy
-import logging
 import pathlib
 
 import numpy as np
@@ -9,9 +8,8 @@ import cosa.run_config
 import cosa.utils as utils
 from cosa.parse_workload import *
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # capture everything
 
+logger = utils.logger
 
 class Prob(object):
     """Problem space with layer dimension, stride and dilation defined.

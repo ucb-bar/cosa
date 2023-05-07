@@ -16,10 +16,10 @@ from time import strftime, gmtime
 import numpy as np
 import yaml
 
+logging.basicConfig(format='%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+            datefmt='%Y-%m-%d:%H:%M:%S',
+                level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.NOTSET)  # capture everything
-logger.disabled = True
-
 
 def mkdir_p(path):
     try:
@@ -270,7 +270,6 @@ def update_prime_factors(prob_factors, prob_idx, factor):
     logger.debug("prob_factors {}".format(prob_factors))
     rm_idx = []
     orig_factor = factor
-    # print(prob_factors)
     for i, val in enumerate(prob_factors[prob_idx]):
         if factor % val == 0:
             rm_idx.append(i)
@@ -286,7 +285,6 @@ def update_prime_factors(prob_factors, prob_idx, factor):
     if len(prob_factors[prob_idx]) == 0:
         prob_factors[prob_idx] = [1]
     pop_val = 1
-    # print(prob_factors)
     logger.debug("updated_prob_factors {}".format(prob_factors))
     for i in vals:
         pop_val = pop_val * i

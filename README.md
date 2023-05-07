@@ -17,7 +17,7 @@ export GRB_LICENSE_FILE=/path/to/gurobi.lic
 2. Timeloop (optional - can be skipped if you only want to run the scheduler, without Timeloop benchmarking): 
 Please refer to the instructions in the [Timeloop Tutorial](http://accelergy.mit.edu/infra_instructions.html) to install Timeloop with Docker.
 To install from source code please, follow the instructions in [Timeloop Github](https://github.com/NVlabs/timeloop).
-The specific Timeloop version used for CoSA evaluation is commit [11920be](https://github.com/NVlabs/timeloop/commit/11920be5a744239c985ff049256f2fc40f65ce8b). Set 
+The specific Timeloop version used for CoSA evaluation is commit [019f107](https://github.com/NVlabs/timeloop/commit/019f10790506e3cbc48f8ef668a418563a012b7c). 
 3. Download and install CoSA:
 ```
 pip install cosa-scheduler
