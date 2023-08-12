@@ -6,7 +6,7 @@ logger = utils.logger
 
 
 def check_timeloop_version():
-    supported_timeloop_commit="d2e83e9"
+    supported_timeloop_commit="019f107"
     try:
         _TIMELOOP_DIR = os.path.expanduser(os.environ['TIMELOOP_DIR'])
         command = "git rev-parse --short HEAD"
