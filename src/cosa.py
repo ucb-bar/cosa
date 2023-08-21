@@ -613,6 +613,10 @@ def run_timeloop(prob_path, arch_path, mapspace_path, output_path, output_mapper
     dram_start_level = 3
     assert(dram_start_level == global_buf_idx+1)
     perm_config[dram_start_level] = outer_perm_config
+    acc_start_level = 1
+    perm_config[acc_start_level] = [4, 5, 0, 1, 3, 6, 2]
+    spad_start_level = 2
+    perm_config[spad_start_level] = [0, 1, 3, 4, 2, 5, 6]
     print(f'spatial_to_factor_map: {spatial_to_factor_map}')
     print(f'update_factor_config: {update_factor_config}')
     print(perm_config)
