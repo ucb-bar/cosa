@@ -1,6 +1,0 @@
-[submodule "dse/vanilla_vae"]
-	path = dse/vanilla_vae
-	url = https://github.com/hqjenny/PyTorch-VAE/
-[submodule "dse/vae_dse"]
-	path = dse/vae_dse
-	url = git@github.com:hqjenny/CoSA_VAE_DSE.git
